@@ -42,17 +42,48 @@ permissions:
   # If false, players need specific permissions
   default: true
 
-# Language Settings
+# 语言设置
 messages:
-  prefix: "&8[&6IslandNpc&8]&r "
-  npc-hidden: "&aYour island NPC has been hidden!"
-  npc-shown: "&aYour island NPC is now visible!"
-  npc-moved: "&aYour island NPC has been moved!"
-  npc-created: "&aIsland NPC has been created!"
-  npc-deleted: "&aIsland NPC has been deleted!"
-  no-island: "&cYou don't have an island!"
-  no-permission: "&cYou don't have permission to do this!"
-  reload-success: "&aConfiguration reloaded successfully!"
+  prefix: "&8[&6岛屿NPC&8]&r "
+  
+  # 命令消息
+  npc-hidden: "&a岛屿NPC已隐藏！"
+  npc-shown: "&a岛屿NPC现在可见！"
+  npc-moved: "&a岛屿NPC已移动到你的位置！"
+  npc-created: "&a岛屿NPC已创建！"
+  npc-deleted: "&a岛屿NPC已删除！"
+  npc-already-hidden: "&e你的岛屿NPC已经是隐藏状态了！"
+  npc-already-visible: "&e你的岛屿NPC已经是可见状态了！"
+  npc-not-found: "&c未找到你岛屿的NPC！"
+  npc-create-failed: "&c创建岛屿NPC失败！"
+  
+  # 错误消息
+  no-island: "&c你没有岛屿！"
+  no-permission: "&c你没有权限使用此命令。"
+  players-only: "&c此命令只能由玩家使用。"
+  unknown-command: "&c未知的子命令。使用 /islandnpc help 查看帮助"
+  
+  # 管理员消息
+  reload-success: "&a配置已重新加载！"
+  fixall-checking: "&e正在检查所有在线玩家的岛屿..."
+  fixall-complete: "&a完成！检查了 {total} 个岛屿，修复了 {fixed} 个NPC。"
+  
+  # 对话框消息
+  dialog-not-configured: "&c对话框ID未配置！"
+  dialog-not-found: "&c未找到对话框: {id}"
+  npc-clicked: "&a你点击了岛屿NPC！"
+  
+  # 帮助消息
+  help-header: "&6&l========== 岛屿NPC命令 =========="
+  help-hide: "&e/islandnpc hide &7- 隐藏你的岛屿NPC"
+  help-show: "&e/islandnpc show &7- 显示你的岛屿NPC"
+  help-move: "&e/islandnpc move &7- 将NPC移动到你的位置"
+  help-fixall: "&e/islandnpc fixall &7- 修复在线玩家缺失的NPC（管理员）"
+  help-create: "&e/islandnpc create &7- 创建岛屿NPC（管理员）"
+  help-delete: "&e/islandnpc delete &7- 删除岛屿NPC（管理员）"
+  help-reload: "&e/islandnpc reload &7- 重载配置并更新NPC（管理员）"
+  help-help: "&e/islandnpc help &7- 显示此帮助信息"
+  help-footer: "&6&l========================================"
 
 # Debug mode
 debug: false

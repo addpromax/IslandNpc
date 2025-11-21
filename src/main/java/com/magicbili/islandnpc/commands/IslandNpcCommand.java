@@ -5,7 +5,7 @@ import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.magicbili.islandnpc.IslandNpcPlugin;
 import net.citizensnpcs.api.npc.NPC;
-import org.bukkit.ChatColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -42,6 +42,8 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
                 return handleShow(sender);
             case "move":
                 return handleMove(sender);
+            case "fixall":
+                return handleFixAll(sender);
             case "reload":
                 return handleReload(sender);
             case "create":
@@ -52,84 +54,84 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
                 sendHelp(sender);
                 return true;
             default:
-                sender.sendMessage(ChatColor.RED + "Unknown subcommand. Use /islandnpc help");
+                sender.sendMessage(plugin.getConfigManager().getMessage("unknown-command"));
                 return true;
         }
     }
 
     private boolean handleHide(CommandSender sender) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "This command can only be used by players.");
+            sender.sendMessage(plugin.getConfigManager().getMessage("players-only"));
             return true;
         }
 
         Player player = (Player) sender;
         if (!hasPermission(player, "islandnpc.hide")) {
-            player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            player.sendMessage(plugin.getConfigManager().getMessage("no-permission"));
             return true;
         }
 
         Island island = getPlayerIsland(player);
         if (island == null) {
-            player.sendMessage(ChatColor.RED + "You don't have an island!");
+            player.sendMessage(plugin.getConfigManager().getMessage("no-island"));
             return true;
         }
 
         UUID islandUUID = island.getUniqueId();
         if (plugin.getNpcManager().isNpcHidden(islandUUID)) {
-            player.sendMessage(ChatColor.YELLOW + "Your island NPC is already hidden!");
+            player.sendMessage(plugin.getConfigManager().getMessage("npc-already-hidden"));
             return true;
         }
 
         plugin.getNpcManager().hideNpc(islandUUID);
-        player.sendMessage(ChatColor.GREEN + "Island NPC has been hidden!");
+        player.sendMessage(plugin.getConfigManager().getMessage("npc-hidden"));
         return true;
     }
 
     private boolean handleShow(CommandSender sender) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "This command can only be used by players.");
+            sender.sendMessage(plugin.getConfigManager().getMessage("players-only"));
             return true;
         }
 
         Player player = (Player) sender;
         if (!hasPermission(player, "islandnpc.show")) {
-            player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            player.sendMessage(plugin.getConfigManager().getMessage("no-permission"));
             return true;
         }
 
         Island island = getPlayerIsland(player);
         if (island == null) {
-            player.sendMessage(ChatColor.RED + "You don't have an island!");
+            player.sendMessage(plugin.getConfigManager().getMessage("no-island"));
             return true;
         }
 
         UUID islandUUID = island.getUniqueId();
         if (!plugin.getNpcManager().isNpcHidden(islandUUID)) {
-            player.sendMessage(ChatColor.YELLOW + "Your island NPC is already visible!");
+            player.sendMessage(plugin.getConfigManager().getMessage("npc-already-visible"));
             return true;
         }
 
         plugin.getNpcManager().showNpc(islandUUID);
-        player.sendMessage(ChatColor.GREEN + "Island NPC is now visible!");
+        player.sendMessage(plugin.getConfigManager().getMessage("npc-shown"));
         return true;
     }
 
     private boolean handleMove(CommandSender sender) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "This command can only be used by players.");
+            sender.sendMessage(plugin.getConfigManager().getMessage("players-only"));
             return true;
         }
 
         Player player = (Player) sender;
         if (!hasPermission(player, "islandnpc.move")) {
-            player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            player.sendMessage(plugin.getConfigManager().getMessage("no-permission"));
             return true;
         }
 
         Island island = getPlayerIsland(player);
         if (island == null) {
-            player.sendMessage(ChatColor.RED + "You don't have an island!");
+            player.sendMessage(plugin.getConfigManager().getMessage("no-island"));
             return true;
         }
 
@@ -137,87 +139,130 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
         NPC npc = plugin.getNpcManager().getIslandNpc(islandUUID);
         
         if (npc == null) {
-            player.sendMessage(ChatColor.RED + "No NPC found for your island!");
+            player.sendMessage(plugin.getConfigManager().getMessage("npc-not-found"));
             return true;
         }
 
         Location newLocation = player.getLocation();
         plugin.getNpcManager().moveNpc(islandUUID, newLocation);
-        player.sendMessage(ChatColor.GREEN + "Island NPC has been moved to your location!");
+        player.sendMessage(plugin.getConfigManager().getMessage("npc-moved"));
         return true;
     }
 
     private boolean handleCreate(CommandSender sender) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "This command can only be used by players.");
+            sender.sendMessage(plugin.getConfigManager().getMessage("players-only"));
             return true;
         }
 
         Player player = (Player) sender;
         if (!player.hasPermission("islandnpc.admin")) {
-            player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            player.sendMessage(plugin.getConfigManager().getMessage("no-permission"));
             return true;
         }
 
         Island island = getPlayerIsland(player);
         if (island == null) {
-            player.sendMessage(ChatColor.RED + "You don't have an island!");
+            player.sendMessage(plugin.getConfigManager().getMessage("no-island"));
             return true;
         }
 
         NPC npc = plugin.getNpcManager().createIslandNpc(island);
         if (npc != null) {
-            player.sendMessage(ChatColor.GREEN + "Island NPC has been created!");
+            player.sendMessage(plugin.getConfigManager().getMessage("npc-created"));
         } else {
-            player.sendMessage(ChatColor.RED + "Failed to create island NPC!");
+            player.sendMessage(plugin.getConfigManager().getMessage("npc-create-failed"));
         }
         return true;
     }
 
     private boolean handleDelete(CommandSender sender) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "This command can only be used by players.");
+            sender.sendMessage(plugin.getConfigManager().getMessage("players-only"));
             return true;
         }
 
         Player player = (Player) sender;
         if (!player.hasPermission("islandnpc.admin")) {
-            player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            player.sendMessage(plugin.getConfigManager().getMessage("no-permission"));
             return true;
         }
 
         Island island = getPlayerIsland(player);
         if (island == null) {
-            player.sendMessage(ChatColor.RED + "You don't have an island!");
+            player.sendMessage(plugin.getConfigManager().getMessage("no-island"));
             return true;
         }
 
         UUID islandUUID = island.getUniqueId();
         plugin.getNpcManager().deleteNpc(islandUUID);
-        player.sendMessage(ChatColor.GREEN + "Island NPC has been deleted!");
+        player.sendMessage(plugin.getConfigManager().getMessage("npc-deleted"));
+        return true;
+    }
+
+    private boolean handleFixAll(CommandSender sender) {
+        if (!sender.hasPermission("islandnpc.admin")) {
+            sender.sendMessage(plugin.getConfigManager().getMessage("no-permission"));
+            return true;
+        }
+
+        sender.sendMessage(plugin.getConfigManager().getMessage("fixall-checking"));
+        
+        int fixed = 0;
+        int total = 0;
+        
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            SuperiorPlayer superiorPlayer = SuperiorSkyblockAPI.getPlayer(onlinePlayer);
+            if (superiorPlayer == null) continue;
+            
+            Island island = superiorPlayer.getIsland();
+            if (island == null) continue;
+            
+            total++;
+            UUID islandUUID = island.getUniqueId();
+            NPC existingNpc = plugin.getNpcManager().getIslandNpc(islandUUID);
+            
+            // 检查NPC是否存在或是否有效
+            if (existingNpc == null || !existingNpc.isSpawned()) {
+                // 删除旧的无效记录
+                if (existingNpc != null) {
+                    plugin.getNpcManager().deleteNpc(islandUUID);
+                }
+                
+                // 重新创建NPC
+                NPC newNpc = plugin.getNpcManager().createIslandNpc(island);
+                if (newNpc != null) {
+                    fixed++;
+                    plugin.getLogger().info("Fixed NPC for island: " + islandUUID + " (Owner: " + onlinePlayer.getName() + ")");
+                }
+            }
+        }
+        
+        sender.sendMessage(plugin.getConfigManager().getMessage("fixall-complete", "total", String.valueOf(total), "fixed", String.valueOf(fixed)));
         return true;
     }
 
     private boolean handleReload(CommandSender sender) {
         if (!sender.hasPermission("islandnpc.admin")) {
-            sender.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            sender.sendMessage(plugin.getConfigManager().getMessage("no-permission"));
             return true;
         }
 
         plugin.reloadPlugin();
-        sender.sendMessage(ChatColor.GREEN + "IslandNpc configuration has been reloaded!");
+        sender.sendMessage(plugin.getConfigManager().getMessage("reload-success"));
         return true;
     }
 
     private void sendHelp(CommandSender sender) {
-        sender.sendMessage(ChatColor.GOLD + "========== IslandNpc Commands ==========");
-        sender.sendMessage(ChatColor.YELLOW + "/islandnpc hide" + ChatColor.GRAY + " - Hide your island NPC");
-        sender.sendMessage(ChatColor.YELLOW + "/islandnpc show" + ChatColor.GRAY + " - Show your island NPC");
-        sender.sendMessage(ChatColor.YELLOW + "/islandnpc move" + ChatColor.GRAY + " - Move NPC to your location");
-        sender.sendMessage(ChatColor.YELLOW + "/islandnpc create" + ChatColor.GRAY + " - Create island NPC (Admin)");
-        sender.sendMessage(ChatColor.YELLOW + "/islandnpc delete" + ChatColor.GRAY + " - Delete island NPC (Admin)");
-        sender.sendMessage(ChatColor.YELLOW + "/islandnpc reload" + ChatColor.GRAY + " - Reload config & update NPCs (Admin)");
-        sender.sendMessage(ChatColor.GOLD + "======================================");
+        sender.sendMessage(plugin.getConfigManager().getMessage("help-header"));
+        sender.sendMessage(plugin.getConfigManager().getMessage("help-hide"));
+        sender.sendMessage(plugin.getConfigManager().getMessage("help-show"));
+        sender.sendMessage(plugin.getConfigManager().getMessage("help-move"));
+        sender.sendMessage(plugin.getConfigManager().getMessage("help-fixall"));
+        sender.sendMessage(plugin.getConfigManager().getMessage("help-create"));
+        sender.sendMessage(plugin.getConfigManager().getMessage("help-delete"));
+        sender.sendMessage(plugin.getConfigManager().getMessage("help-reload"));
+        sender.sendMessage(plugin.getConfigManager().getMessage("help-footer"));
     }
 
     private Island getPlayerIsland(Player player) {
@@ -237,7 +282,7 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            List<String> subCommands = Arrays.asList("hide", "show", "move", "create", "delete", "reload", "help");
+            List<String> subCommands = Arrays.asList("hide", "show", "move", "fixall", "create", "delete", "reload", "help");
             String input = args[0].toLowerCase();
             
             for (String subCmd : subCommands) {

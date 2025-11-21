@@ -55,4 +55,8 @@ Desktop.ini
 # Plugin test server
 test-server/
 
+# Reference code folder
 参考代码/
+
+# Keep libs folder for local dependencies
+libs/

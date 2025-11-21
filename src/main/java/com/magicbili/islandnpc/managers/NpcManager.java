@@ -1,7 +1,6 @@
 package com.magicbili.islandnpc.managers;
 
 import com.bgsoftware.superiorskyblock.api.island.Island;
-import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.magicbili.islandnpc.IslandNpcPlugin;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
@@ -108,7 +107,10 @@ public class NpcManager {
     }
 
     private Location calculateSpawnLocation(Island island) {
-        Location islandSpawn = island.getCenter(com.bgsoftware.superiorskyblock.api.world.Dimension.NORMAL);
+        // 使用NORMAL维度获取岛屿中心位置
+        com.bgsoftware.superiorskyblock.api.world.Dimension normalDimension = 
+            com.bgsoftware.superiorskyblock.api.world.Dimension.getByName("NORMAL");
+        Location islandSpawn = island.getCenter(normalDimension);
         if (islandSpawn == null) return null;
 
         double offsetX = plugin.getConfigManager().getSpawnOffsetX();

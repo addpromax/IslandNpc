@@ -21,8 +21,12 @@ public class PlayerIslandListener implements Listener {
         Island island = event.getIsland();
         
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (island != null && island.getCenter(com.bgsoftware.superiorskyblock.api.world.Dimension.NORMAL) != null) {
-                plugin.getNpcManager().createIslandNpc(island);
+            if (island != null) {
+                com.bgsoftware.superiorskyblock.api.world.Dimension normalDimension = 
+                    com.bgsoftware.superiorskyblock.api.world.Dimension.getByName("NORMAL");
+                if (island.getCenter(normalDimension) != null) {
+                    plugin.getNpcManager().createIslandNpc(island);
+                }
             }
         }, 20L);
     }

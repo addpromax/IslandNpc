@@ -15,7 +15,6 @@
 - ✅ 右键NPC打开FancyDialogs菜单
 - ✅ 完整的权限系统
 - ✅ 支持配置重载
-- ✅ 支持SlimeWorldManager
 
 ## 依赖插件
 
@@ -25,7 +24,6 @@
 
 ### 可选依赖
 - **FancyDialogs** - 对话框菜单系统
-- **SlimeWorldManager** - 世界管理
 
 ## 安装说明
 
@@ -67,6 +65,7 @@ permissions:
 | `/islandnpc hide` | 隐藏你的岛屿NPC | `islandnpc.hide` |
 | `/islandnpc show` | 显示你的岛屿NPC | `islandnpc.show` |
 | `/islandnpc move` | 将NPC移动到你的位置 | `islandnpc.move` |
+| `/islandnpc fixall` | 修复所有在线玩家缺失的NPC（管理员） | `islandnpc.admin` |
 | `/islandnpc create` | 创建岛屿NPC（管理员） | `islandnpc.admin` |
 | `/islandnpc delete` | 删除岛屿NPC（管理员） | `islandnpc.admin` |
 | `/islandnpc reload` | 重载配置并更新所有NPC（管理员） | `islandnpc.admin` |

@@ -1,5 +1,7 @@
 package com.magicbili.islandnpc.listeners;
 
+import com.fancyinnovations.fancydialogs.api.Dialog;
+import com.fancyinnovations.fancydialogs.api.FancyDialogs;
 import com.magicbili.islandnpc.IslandNpcPlugin;
 import net.citizensnpcs.api.event.NPCRightClickEvent;
 import net.citizensnpcs.api.npc.NPC;
@@ -31,19 +33,32 @@ public class NpcInteractListener implements Listener {
             if (dialogId != null && !dialogId.isEmpty()) {
                 openFancyDialog(player, dialogId);
             } else {
-                player.sendMessage("§cDialog ID not configured!");
+                player.sendMessage(plugin.getConfigManager().getMessage("dialog-not-configured"));
             }
         } else {
-            player.sendMessage("§aYou clicked the island NPC!");
+            player.sendMessage(plugin.getConfigManager().getMessage("npc-clicked"));
         }
     }
 
     private void openFancyDialog(Player player, String dialogId) {
         try {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), 
-                "fancydialogs open " + dialogId + " " + player.getName());
+            FancyDialogs fancyDialogs = FancyDialogs.get();
+            if (fancyDialogs == null) {
+                plugin.getLogger().warning("FancyDialogs plugin not loaded!");
+                return;
+            }
+            
+            Dialog dialog = fancyDialogs.getDialogRegistry().get(dialogId);
+            if (dialog == null) {
+                plugin.getLogger().warning("Dialog not found: " + dialogId);
+                player.sendMessage(plugin.getConfigManager().getMessage("dialog-not-found", "id", dialogId));
+                return;
+            }
+            
+            dialog.open(player);
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to open FancyDialog: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
