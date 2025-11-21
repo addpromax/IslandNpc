@@ -26,26 +26,38 @@ public class NpcManager {
         this.npcRegistry = CitizensAPI.getNPCRegistry();
         this.islandNpcs = new HashMap<>();
         this.hiddenNpcs = new HashMap<>();
-        loadNpcData();
+        
+        // 延迟加载NPC数据，等待Citizens和SlimeWorld完全加载完成
+        // SlimeWorld的世界可能需要更长时间来加载
+        org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            loadNpcData();
+        }, 100L); // 5秒延迟，确保Citizens和SlimeWorld已加载完所有NPC
     }
 
     private void loadNpcData() {
         ConfigurationSection section = plugin.getConfigManager().getNpcDataConfig().getConfigurationSection("npcs");
-        if (section == null) return;
+        if (section == null) {
+            return;
+        }
 
+        int loaded = 0;
+        
         for (String key : section.getKeys(false)) {
             try {
                 UUID islandUUID = UUID.fromString(key);
-                int npcId = section.getInt(key + ".npc-id");
                 boolean hidden = section.getBoolean(key + ".hidden", false);
-
-                islandNpcs.put(islandUUID, npcId);
+                
+                // 只加载隐藏状态，世界加载后会从配置重新创建NPC
                 hiddenNpcs.put(islandUUID, hidden);
+                loaded++;
             } catch (IllegalArgumentException e) {
-                plugin.getLogger().warning("Invalid UUID in npcdata.yml: " + key);
+                plugin.getLogger().warning("无效的岛屿UUID: " + key);
             }
         }
-        plugin.getLogger().info("Loaded " + islandNpcs.size() + " NPC data entries");
+        
+        if (loaded > 0) {
+            plugin.getLogger().info("加载了 " + loaded + " 个岛屿的NPC配置");
+        }
     }
 
     public void saveAllNpcData() {
@@ -53,10 +65,33 @@ public class NpcManager {
             UUID islandUUID = entry.getKey();
             int npcId = entry.getValue();
             boolean hidden = hiddenNpcs.getOrDefault(islandUUID, false);
+            
+            NPC npc = npcRegistry.getById(npcId);
+            if (npc == null) {
+                continue;
+            }
 
             String path = "npcs." + islandUUID.toString();
-            plugin.getConfigManager().getNpcDataConfig().set(path + ".npc-id", npcId);
+            
+            // 保存位置信息
+            Location loc = npc.getStoredLocation();
+            if (loc != null) {
+                plugin.getConfigManager().getNpcDataConfig().set(path + ".location.world", loc.getWorld() != null ? loc.getWorld().getName() : "unknown");
+                plugin.getConfigManager().getNpcDataConfig().set(path + ".location.x", loc.getX());
+                plugin.getConfigManager().getNpcDataConfig().set(path + ".location.y", loc.getY());
+                plugin.getConfigManager().getNpcDataConfig().set(path + ".location.z", loc.getZ());
+                plugin.getConfigManager().getNpcDataConfig().set(path + ".location.yaw", loc.getYaw());
+                plugin.getConfigManager().getNpcDataConfig().set(path + ".location.pitch", loc.getPitch());
+            }
+            
+            // 保存隐藏状态
             plugin.getConfigManager().getNpcDataConfig().set(path + ".hidden", hidden);
+            
+            // 保存对话框ID
+            String dialogId = npc.data().get("dialogId");
+            if (dialogId != null) {
+                plugin.getConfigManager().getNpcDataConfig().set(path + ".dialog-id", dialogId);
+            }
         }
         plugin.getConfigManager().saveNpcData();
     }
@@ -92,17 +127,21 @@ public class NpcManager {
             }
         }
 
+        // spawn NPC
         npc.spawn(spawnLoc);
+        
+        // 设置持久化数据
         npc.data().setPersistent("islandUUID", islandUUID.toString());
         npc.data().setPersistent("dialogId", plugin.getConfigManager().getDialogId());
 
         setupHologram(npc);
 
+        // 保存我们的映射关系和位置数据
         islandNpcs.put(islandUUID, npc.getId());
         hiddenNpcs.put(islandUUID, false);
         saveAllNpcData();
 
-        plugin.getLogger().info("Created NPC for island: " + islandUUID);
+        plugin.getLogger().info("Created NPC #" + npc.getId() + " for island: " + islandUUID);
         return npc;
     }
 
@@ -123,6 +162,84 @@ public class NpcManager {
     public NPC getIslandNpc(UUID islandUUID) {
         if (!islandNpcs.containsKey(islandUUID)) return null;
         return npcRegistry.getById(islandNpcs.get(islandUUID));
+    }
+    
+    public java.util.Set<UUID> getAllIslandUUIDs() {
+        return islandNpcs.keySet();
+    }
+    
+    /**
+     * 从保存的数据重新创建NPC（用于世界加载后）
+     */
+    public void recreateNpcForIsland(UUID islandUUID) {
+        // 检查是否已经有NPC
+        if (islandNpcs.containsKey(islandUUID)) {
+            NPC existingNpc = npcRegistry.getById(islandNpcs.get(islandUUID));
+            if (existingNpc != null && existingNpc.isSpawned()) {
+                return; // NPC已存在且已spawn
+            }
+        }
+        
+        // 从配置读取保存的数据
+        ConfigurationSection section = plugin.getConfigManager().getNpcDataConfig().getConfigurationSection("npcs." + islandUUID.toString());
+        if (section == null) {
+            return;
+        }
+        
+        // 读取位置
+        String worldName = section.getString("location.world");
+        double x = section.getDouble("location.x");
+        double y = section.getDouble("location.y");
+        double z = section.getDouble("location.z");
+        float yaw = (float) section.getDouble("location.yaw");
+        float pitch = (float) section.getDouble("location.pitch");
+        
+        org.bukkit.World world = org.bukkit.Bukkit.getWorld(worldName);
+        if (world == null) {
+            return;
+        }
+        
+        Location location = new Location(world, x, y, z, yaw, pitch);
+        boolean hidden = section.getBoolean("hidden", false);
+        String dialogId = section.getString("dialog-id");
+        
+        // 创建NPC
+        EntityType entityType;
+        try {
+            entityType = EntityType.valueOf(plugin.getConfigManager().getNpcEntityType());
+        } catch (IllegalArgumentException e) {
+            entityType = EntityType.VILLAGER;
+        }
+        
+        NPC npc = npcRegistry.createNPC(entityType, "");
+        
+        // 设置皮肤
+        if (entityType == EntityType.PLAYER) {
+            String skin = plugin.getConfigManager().getNpcSkin();
+            if (!skin.isEmpty()) {
+                npc.getOrAddTrait(net.citizensnpcs.trait.SkinTrait.class).setSkinName(skin);
+            }
+        }
+        
+        // Spawn NPC
+        if (!hidden) {
+            npc.spawn(location);
+        }
+        
+        // 设置数据
+        npc.data().setPersistent("islandUUID", islandUUID.toString());
+        if (dialogId != null) {
+            npc.data().setPersistent("dialogId", dialogId);
+        } else {
+            npc.data().setPersistent("dialogId", plugin.getConfigManager().getDialogId());
+        }
+        
+        // 设置hologram
+        setupHologram(npc);
+        
+        // 保存映射
+        islandNpcs.put(islandUUID, npc.getId());
+        hiddenNpcs.put(islandUUID, hidden);
     }
 
     public void hideNpc(UUID islandUUID) {
@@ -161,6 +278,7 @@ public class NpcManager {
             if (!wasSpawned) {
                 npc.despawn();
             }
+            // 保存NPC位置数据
             saveAllNpcData();
         }
     }
@@ -184,6 +302,8 @@ public class NpcManager {
                 npc.data().setPersistent("dialogId", plugin.getConfigManager().getDialogId());
             }
         }
+        // 保存更新的数据
+        saveAllNpcData();
         plugin.getLogger().info("Reloaded all NPCs with updated holograms and dialog IDs");
     }
 

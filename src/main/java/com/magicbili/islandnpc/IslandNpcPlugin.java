@@ -6,7 +6,6 @@ import com.magicbili.islandnpc.config.ConfigManager;
 import com.magicbili.islandnpc.listeners.NpcInteractListener;
 import com.magicbili.islandnpc.listeners.PlayerIslandListener;
 import com.magicbili.islandnpc.managers.NpcManager;
-import net.citizensnpcs.api.CitizensAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -52,9 +51,10 @@ public class IslandNpcPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // 保存所有NPC数据
+        // 只保存我们的映射关系，Citizens会自动保存NPC数据
         if (npcManager != null) {
             npcManager.saveAllNpcData();
+            getLogger().info("已保存岛屿-NPC映射关系");
         }
 
         getLogger().info("IslandNpc 插件已禁用！");
@@ -98,6 +98,7 @@ public class IslandNpcPlugin extends JavaPlugin {
     private void registerListeners() {
         getServer().getPluginManager().registerEvents(new PlayerIslandListener(this), this);
         getServer().getPluginManager().registerEvents(new NpcInteractListener(this), this);
+        getServer().getPluginManager().registerEvents(new com.magicbili.islandnpc.listeners.WorldLoadListener(this), this);
         getLogger().info("事件监听器已注册");
     }
 
