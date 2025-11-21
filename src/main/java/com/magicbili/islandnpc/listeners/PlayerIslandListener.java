@@ -1,6 +1,7 @@
 package com.magicbili.islandnpc.listeners;
 
 import com.bgsoftware.superiorskyblock.api.events.IslandCreateEvent;
+import com.bgsoftware.superiorskyblock.api.events.IslandDisbandEvent;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.magicbili.islandnpc.IslandNpcPlugin;
 import org.bukkit.Bukkit;
@@ -29,5 +30,16 @@ public class PlayerIslandListener implements Listener {
                 }
             }
         }, 20L);
+    }
+    
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onIslandDisband(IslandDisbandEvent event) {
+        Island island = event.getIsland();
+        if (island != null) {
+            // 异步删除NPC，避免阻塞主线程
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                plugin.getNpcManager().deleteNpc(island.getUniqueId());
+            });
+        }
     }
 }

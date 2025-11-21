@@ -96,6 +96,7 @@ mvn clean package
 3. 使用 `/islandnpc move` 将NPC移动到你当前的位置
 4. 使用 `/islandnpc hide` 隐藏NPC
 5. 使用 `/islandnpc reload` 重载配置并更新所有NPC的全息显示和菜单
+6. 玩家删除岛屿时，NPC和相关数据会自动清理
 
 ### NPC模型配置
 - 默认模型为 `VILLAGER`（村民）
@@ -119,6 +120,14 @@ mvn clean package
 本插件为私有项目，版权归作者所有。
 
 ## 版本历史
+
+### 1.0.1
+- 完全重构NPC持久化机制，不再依赖Citizens的saves.yml
+- 添加SlimeWorld支持，使用ASP的LoadSlimeWorldEvent自动重新创建NPC
+- 异步处理世界加载，避免大量玩家时卡服
+- 添加岛屿删除时自动清理NPC数据功能
+- 优化日志输出，移除调试信息
+- 修复SlimeWorld环境下NPC丢失问题
 
 ### 1.0.0
 - 初始版本发布
