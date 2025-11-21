@@ -1,0 +1,39 @@
+name: IslandNpc
+version: ${project.version}
+main: com.magicbili.islandnpc.IslandNpcPlugin
+api-version: 1.20
+author: magicbili
+description: Island NPC Plugin for SuperiorSkyblock2
+website: https://github.com/magicbili
+
+depend:
+  - SuperiorSkyblock2
+  - Citizens
+
+softdepend:
+  - FancyDialogs
+  - SlimeWorldManager
+
+commands:
+  islandnpc:
+    description: Main command for Island NPC plugin
+    usage: /islandnpc <hide|show|move|create|delete|reload|help>
+    aliases: [inpc, islnpc]
+
+permissions:
+  islandnpc.hide:
+    description: Allow hiding island NPC
+    default: true
+  islandnpc.show:
+    description: Allow showing island NPC
+    default: true
+  islandnpc.move:
+    description: Allow moving island NPC
+    default: true
+  islandnpc.admin:
+    description: Admin permission for managing NPCs
+    default: op
+    children:
+      islandnpc.hide: true
+      islandnpc.show: true
+      islandnpc.move: true

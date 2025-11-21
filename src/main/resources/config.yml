@@ -1,0 +1,58 @@
+# IslandNpc Configuration File
+# Author: magicbili
+
+# NPC Settings
+npc:
+  # NPC entity type (VILLAGER, PLAYER, ZOMBIE, SKELETON, etc.)
+  # See: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/entity/EntityType.html
+  entity-type: "VILLAGER"
+  
+  # NPC skin (only for PLAYER type, player name or leave empty)
+  skin: ""
+  
+  # Dialog ID to open when right-clicking NPC (FancyDialogs)
+  dialog-id: "island_menu"
+  
+  # Spawn offset from island center
+  spawn-offset:
+    x: 0.0
+    y: 0.0
+    z: 5.0
+  
+  # Hologram settings
+  hologram:
+    # Enable hologram display above NPC
+    enabled: true
+    
+    # Hologram lines (supports color codes with &, placeholders, and multiple lines)
+    lines:
+      - "&e&l⭐ Island NPC ⭐"
+      - "&7Right click to interact"
+      - "&6Welcome to your island!"
+    
+    # Line height spacing (default: -1 for automatic)
+    line-height: -1
+    
+    # View range in blocks (-1 for default)
+    view-range: 30
+
+# Permission Settings
+permissions:
+  # If true, all players have default permissions (hide, show, move)
+  # If false, players need specific permissions
+  default: true
+
+# Language Settings
+messages:
+  prefix: "&8[&6IslandNpc&8]&r "
+  npc-hidden: "&aYour island NPC has been hidden!"
+  npc-shown: "&aYour island NPC is now visible!"
+  npc-moved: "&aYour island NPC has been moved!"
+  npc-created: "&aIsland NPC has been created!"
+  npc-deleted: "&aIsland NPC has been deleted!"
+  no-island: "&cYou don't have an island!"
+  no-permission: "&cYou don't have permission to do this!"
+  reload-success: "&aConfiguration reloaded successfully!"
+
+# Debug mode
+debug: false
