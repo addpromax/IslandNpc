@@ -11,7 +11,12 @@
 
     <name>IslandNpc</name>
     <description>Island NPC Plugin for SuperiorSkyblock2</description>
-    <author>magicbili</author>
+
+    <developers>
+        <developer>
+            <name>magicbili</name>
+        </developer>
+    </developers>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
