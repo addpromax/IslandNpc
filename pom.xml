@@ -87,6 +87,15 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/libs/FancyDialogs-0.0.32.jar</systemPath>
         </dependency>
+
+        <!-- FancyNpcs - Local Dependency -->
+        <dependency>
+            <groupId>de.oliver</groupId>
+            <artifactId>FancyNpcs</artifactId>
+            <version>2.8.0.312</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/FancyNpcs-2.8.0.312.jar</systemPath>
+        </dependency>
     </dependencies>
 
     <build>
@@ -107,6 +116,7 @@
                 <configuration>
                     <source>17</source>
                     <target>17</target>
+                    <proc>none</proc>
                 </configuration>
             </plugin>
             

@@ -8,15 +8,16 @@ website: https://github.com/magicbili
 
 depend:
   - SuperiorSkyblock2
-  - Citizens
 
 softdepend:
+  - Citizens
+  - FancyNpcs
   - FancyDialogs
 
 commands:
   islandnpc:
     description: Main command for Island NPC plugin
-    usage: /islandnpc <hide|show|move|create|delete|reload|help>
+    usage: /islandnpc <hide|show|toggle|move|create|delete|reload|help>
     aliases: [inpc, islnpc]
 
 permissions:
@@ -25,6 +26,9 @@ permissions:
     default: true
   islandnpc.show:
     description: Allow showing island NPC
+    default: true
+  islandnpc.toggle:
+    description: Allow toggling island NPC visibility
     default: true
   islandnpc.move:
     description: Allow moving island NPC
@@ -35,4 +39,5 @@ permissions:
     children:
       islandnpc.hide: true
       islandnpc.show: true
+      islandnpc.toggle: true
       islandnpc.move: true

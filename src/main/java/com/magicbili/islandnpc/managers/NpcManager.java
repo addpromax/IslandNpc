@@ -34,6 +34,16 @@ public class NpcManager {
         }, 100L); // 5秒延迟，确保Citizens和SlimeWorld已加载完所有NPC
     }
 
+    /**
+     * 输出debug日志（仅在debug模式启用时）
+     * @param message 日志消息
+     */
+    private void debug(String message) {
+        if (plugin.getConfigManager().isDebugEnabled()) {
+            plugin.getLogger().info("[DEBUG] " + message);
+        }
+    }
+
     private void loadNpcData() {
         ConfigurationSection section = plugin.getConfigManager().getNpcDataConfig().getConfigurationSection("npcs");
         if (section == null) {
@@ -155,8 +165,16 @@ public class NpcManager {
         double offsetX = plugin.getConfigManager().getSpawnOffsetX();
         double offsetY = plugin.getConfigManager().getSpawnOffsetY();
         double offsetZ = plugin.getConfigManager().getSpawnOffsetZ();
+        float yaw = plugin.getConfigManager().getNpcYaw();
+        float pitch = plugin.getConfigManager().getNpcPitch();
 
-        return islandSpawn.clone().add(offsetX, offsetY, offsetZ);
+        Location spawnLoc = islandSpawn.clone().add(offsetX, offsetY, offsetZ);
+        spawnLoc.setYaw(yaw);
+        spawnLoc.setPitch(pitch);
+        
+        debug(String.format("Citizens NPC朝向: Yaw=%.1f, Pitch=%.1f", yaw, pitch));
+        
+        return spawnLoc;
     }
 
     public NPC getIslandNpc(UUID islandUUID) {
@@ -191,8 +209,10 @@ public class NpcManager {
         double x = section.getDouble("location.x");
         double y = section.getDouble("location.y");
         double z = section.getDouble("location.z");
-        float yaw = (float) section.getDouble("location.yaw");
-        float pitch = (float) section.getDouble("location.pitch");
+        
+        // 使用配置文件中的朝向（而不是保存的朝向），这样可以统一管理
+        float yaw = plugin.getConfigManager().getNpcYaw();
+        float pitch = plugin.getConfigManager().getNpcPitch();
         
         org.bukkit.World world = org.bukkit.Bukkit.getWorld(worldName);
         if (world == null) {
@@ -202,6 +222,8 @@ public class NpcManager {
         Location location = new Location(world, x, y, z, yaw, pitch);
         boolean hidden = section.getBoolean("hidden", false);
         String dialogId = section.getString("dialog-id");
+        
+        debug(String.format("Citizens recreateNpc 朝向: Yaw=%.1f, Pitch=%.1f", yaw, pitch));
         
         // 创建NPC
         EntityType entityType;

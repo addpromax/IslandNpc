@@ -64,6 +64,7 @@ permissions:
 |------|------|------|
 | `/islandnpc hide` | 隐藏你的岛屿NPC | `islandnpc.hide` |
 | `/islandnpc show` | 显示你的岛屿NPC | `islandnpc.show` |
+| `/islandnpc toggle` | 切换你的岛屿NPC可见性 | `islandnpc.toggle` |
 | `/islandnpc move` | 将NPC移动到你的位置 | `islandnpc.move` |
 | `/islandnpc fixall` | 修复所有在线玩家缺失的NPC（管理员） | `islandnpc.admin` |
 | `/islandnpc create` | 创建岛屿NPC（管理员） | `islandnpc.admin` |
@@ -75,6 +76,7 @@ permissions:
 
 - `islandnpc.hide` - 允许隐藏NPC（默认：true）
 - `islandnpc.show` - 允许显示NPC（默认：true）
+- `islandnpc.toggle` - 允许切换NPC可见性（默认：true）
 - `islandnpc.move` - 允许移动NPC（默认：true）
 - `islandnpc.admin` - 管理员权限（默认：op）
 
@@ -94,7 +96,7 @@ mvn clean package
 1. 玩家创建岛屿后，NPC会自动在岛屿中心偏移位置生成
 2. 右键点击NPC打开配置的FancyDialogs菜单
 3. 使用 `/islandnpc move` 将NPC移动到你当前的位置
-4. 使用 `/islandnpc hide` 隐藏NPC
+4. 使用 `/islandnpc toggle` 快速切换NPC的可见性，或使用 `/islandnpc hide` 隐藏NPC
 5. 使用 `/islandnpc reload` 重载配置并更新所有NPC的全息显示和菜单
 6. 玩家删除岛屿时，NPC和相关数据会自动清理
 

@@ -40,6 +40,8 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
                 return handleHide(sender);
             case "show":
                 return handleShow(sender);
+            case "toggle":
+                return handleToggle(sender);
             case "move":
                 return handleMove(sender);
             case "fixall":
@@ -78,12 +80,21 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
         }
 
         UUID islandUUID = island.getUniqueId();
-        if (plugin.getNpcManager().isNpcHidden(islandUUID)) {
+        
+        boolean isHidden = plugin.getNpcManager() != null ? 
+            plugin.getNpcManager().isNpcHidden(islandUUID) : 
+            plugin.getFancyNpcManager().isNpcHidden(islandUUID);
+            
+        if (isHidden) {
             player.sendMessage(plugin.getConfigManager().getMessage("npc-already-hidden"));
             return true;
         }
 
-        plugin.getNpcManager().hideNpc(islandUUID);
+        if (plugin.getNpcManager() != null) {
+            plugin.getNpcManager().hideNpc(islandUUID);
+        } else {
+            plugin.getFancyNpcManager().hideNpc(islandUUID);
+        }
         player.sendMessage(plugin.getConfigManager().getMessage("npc-hidden"));
         return true;
     }
@@ -107,13 +118,65 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
         }
 
         UUID islandUUID = island.getUniqueId();
-        if (!plugin.getNpcManager().isNpcHidden(islandUUID)) {
+        
+        boolean isHidden = plugin.getNpcManager() != null ? 
+            plugin.getNpcManager().isNpcHidden(islandUUID) : 
+            plugin.getFancyNpcManager().isNpcHidden(islandUUID);
+            
+        if (!isHidden) {
             player.sendMessage(plugin.getConfigManager().getMessage("npc-already-visible"));
             return true;
         }
 
-        plugin.getNpcManager().showNpc(islandUUID);
+        if (plugin.getNpcManager() != null) {
+            plugin.getNpcManager().showNpc(islandUUID);
+        } else {
+            plugin.getFancyNpcManager().showNpc(islandUUID);
+        }
         player.sendMessage(plugin.getConfigManager().getMessage("npc-shown"));
+        return true;
+    }
+
+    private boolean handleToggle(CommandSender sender) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(plugin.getConfigManager().getMessage("players-only"));
+            return true;
+        }
+
+        Player player = (Player) sender;
+        if (!hasPermission(player, "islandnpc.toggle")) {
+            player.sendMessage(plugin.getConfigManager().getMessage("no-permission"));
+            return true;
+        }
+
+        Island island = getPlayerIsland(player);
+        if (island == null) {
+            player.sendMessage(plugin.getConfigManager().getMessage("no-island"));
+            return true;
+        }
+
+        UUID islandUUID = island.getUniqueId();
+        
+        boolean isHidden = plugin.getNpcManager() != null ? 
+            plugin.getNpcManager().isNpcHidden(islandUUID) : 
+            plugin.getFancyNpcManager().isNpcHidden(islandUUID);
+        
+        if (isHidden) {
+            if (plugin.getNpcManager() != null) {
+                plugin.getNpcManager().showNpc(islandUUID);
+            } else {
+                plugin.getFancyNpcManager().showNpc(islandUUID);
+            }
+            player.sendMessage(plugin.getConfigManager().getMessage("npc-toggled-visible"));
+        } else {
+            if (plugin.getNpcManager() != null) {
+                plugin.getNpcManager().hideNpc(islandUUID);
+            } else {
+                plugin.getFancyNpcManager().hideNpc(islandUUID);
+            }
+            player.sendMessage(plugin.getConfigManager().getMessage("npc-toggled-hidden"));
+        }
+        
         return true;
     }
 
@@ -136,15 +199,23 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
         }
 
         UUID islandUUID = island.getUniqueId();
-        NPC npc = plugin.getNpcManager().getIslandNpc(islandUUID);
-        
-        if (npc == null) {
-            player.sendMessage(plugin.getConfigManager().getMessage("npc-not-found"));
-            return true;
-        }
-
         Location newLocation = player.getLocation();
-        plugin.getNpcManager().moveNpc(islandUUID, newLocation);
+        
+        if (plugin.getNpcManager() != null) {
+            NPC npc = plugin.getNpcManager().getIslandNpc(islandUUID);
+            if (npc == null) {
+                player.sendMessage(plugin.getConfigManager().getMessage("npc-not-found"));
+                return true;
+            }
+            plugin.getNpcManager().moveNpc(islandUUID, newLocation);
+        } else {
+            de.oliver.fancynpcs.api.Npc npc = plugin.getFancyNpcManager().getIslandNpc(islandUUID);
+            if (npc == null) {
+                player.sendMessage(plugin.getConfigManager().getMessage("npc-not-found"));
+                return true;
+            }
+            plugin.getFancyNpcManager().moveNpc(islandUUID, newLocation);
+        }
         player.sendMessage(plugin.getConfigManager().getMessage("npc-moved"));
         return true;
     }
@@ -167,8 +238,16 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        NPC npc = plugin.getNpcManager().createIslandNpc(island);
-        if (npc != null) {
+        boolean success = false;
+        if (plugin.getNpcManager() != null) {
+            NPC npc = plugin.getNpcManager().createIslandNpc(island);
+            success = npc != null;
+        } else {
+            de.oliver.fancynpcs.api.Npc npc = plugin.getFancyNpcManager().createIslandNpc(island);
+            success = npc != null;
+        }
+        
+        if (success) {
             player.sendMessage(plugin.getConfigManager().getMessage("npc-created"));
         } else {
             player.sendMessage(plugin.getConfigManager().getMessage("npc-create-failed"));
@@ -195,7 +274,11 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
         }
 
         UUID islandUUID = island.getUniqueId();
-        plugin.getNpcManager().deleteNpc(islandUUID);
+        if (plugin.getNpcManager() != null) {
+            plugin.getNpcManager().deleteNpc(islandUUID);
+        } else {
+            plugin.getFancyNpcManager().deleteNpc(islandUUID);
+        }
         player.sendMessage(plugin.getConfigManager().getMessage("npc-deleted"));
         return true;
     }
@@ -220,20 +303,35 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
             
             total++;
             UUID islandUUID = island.getUniqueId();
-            NPC existingNpc = plugin.getNpcManager().getIslandNpc(islandUUID);
             
-            // 检查NPC是否存在或是否有效
-            if (existingNpc == null || !existingNpc.isSpawned()) {
-                // 删除旧的无效记录
-                if (existingNpc != null) {
-                    plugin.getNpcManager().deleteNpc(islandUUID);
-                }
+            boolean needsFix = false;
+            if (plugin.getNpcManager() != null) {
+                NPC existingNpc = plugin.getNpcManager().getIslandNpc(islandUUID);
+                needsFix = (existingNpc == null || !existingNpc.isSpawned());
                 
-                // 重新创建NPC
-                NPC newNpc = plugin.getNpcManager().createIslandNpc(island);
-                if (newNpc != null) {
-                    fixed++;
-                    plugin.getLogger().info("Fixed NPC for island: " + islandUUID + " (Owner: " + onlinePlayer.getName() + ")");
+                if (needsFix) {
+                    if (existingNpc != null) {
+                        plugin.getNpcManager().deleteNpc(islandUUID);
+                    }
+                    NPC newNpc = plugin.getNpcManager().createIslandNpc(island);
+                    if (newNpc != null) {
+                        fixed++;
+                        plugin.getLogger().info("Fixed NPC for island: " + islandUUID + " (Owner: " + onlinePlayer.getName() + ")");
+                    }
+                }
+            } else {
+                de.oliver.fancynpcs.api.Npc existingNpc = plugin.getFancyNpcManager().getIslandNpc(islandUUID);
+                needsFix = (existingNpc == null);
+                
+                if (needsFix) {
+                    if (existingNpc != null) {
+                        plugin.getFancyNpcManager().deleteNpc(islandUUID);
+                    }
+                    de.oliver.fancynpcs.api.Npc newNpc = plugin.getFancyNpcManager().createIslandNpc(island);
+                    if (newNpc != null) {
+                        fixed++;
+                        plugin.getLogger().info("Fixed NPC for island: " + islandUUID + " (Owner: " + onlinePlayer.getName() + ")");
+                    }
                 }
             }
         }
@@ -257,6 +355,7 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(plugin.getConfigManager().getMessage("help-header"));
         sender.sendMessage(plugin.getConfigManager().getMessage("help-hide"));
         sender.sendMessage(plugin.getConfigManager().getMessage("help-show"));
+        sender.sendMessage(plugin.getConfigManager().getMessage("help-toggle"));
         sender.sendMessage(plugin.getConfigManager().getMessage("help-move"));
         sender.sendMessage(plugin.getConfigManager().getMessage("help-fixall"));
         sender.sendMessage(plugin.getConfigManager().getMessage("help-create"));
@@ -282,7 +381,7 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            List<String> subCommands = Arrays.asList("hide", "show", "move", "fixall", "create", "delete", "reload", "help");
+            List<String> subCommands = Arrays.asList("hide", "show", "toggle", "move", "fixall", "create", "delete", "reload", "help");
             String input = args[0].toLowerCase();
             
             for (String subCmd : subCommands) {

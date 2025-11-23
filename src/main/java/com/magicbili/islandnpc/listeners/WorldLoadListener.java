@@ -33,7 +33,12 @@ public class WorldLoadListener implements Listener {
     }
     
     private void respawnNPCsInWorld(World world) {
-        if (world == null || plugin.getNpcManager() == null) {
+        if (world == null) {
+            return;
+        }
+        
+        // 检查使用哪个NPC管理器
+        if (plugin.getNpcManager() == null && plugin.getFancyNpcManager() == null) {
             return;
         }
         
@@ -55,7 +60,11 @@ public class WorldLoadListener implements Listener {
                 if (worldName != null && worldName.equals(world.getName())) {
                     // 回到主线程创建NPC（必须在主线程）
                     Bukkit.getScheduler().runTask(plugin, () -> {
-                        plugin.getNpcManager().recreateNpcForIsland(islandUUID);
+                        if (plugin.getNpcManager() != null) {
+                            plugin.getNpcManager().recreateNpcForIsland(islandUUID);
+                        } else if (plugin.getFancyNpcManager() != null) {
+                            plugin.getFancyNpcManager().recreateNpcForIsland(islandUUID);
+                        }
                     });
                     recreated++;
                 }

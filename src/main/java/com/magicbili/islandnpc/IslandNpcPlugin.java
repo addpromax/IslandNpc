@@ -20,24 +20,32 @@ public class IslandNpcPlugin extends JavaPlugin {
     private static IslandNpcPlugin instance;
     private ConfigManager configManager;
     private NpcManager npcManager;
+    private com.magicbili.islandnpc.managers.FancyNpcManager fancyNpcManager;
 
     @Override
     public void onEnable() {
         instance = this;
 
-        // 检查依赖插件
-        if (!checkDependencies()) {
+        // 初始化配置（必须在检查依赖之前，因为需要读取 NPC 提供者配置）
+        configManager = new ConfigManager(this);
+        configManager.loadConfig();
+
+        // 检查依赖插件并确定可用的NPC提供者
+        String actualProvider = checkDependenciesAndDetermineProvider();
+        if (actualProvider == null) {
             getLogger().severe("缺少必需的依赖插件！插件将被禁用。");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
 
-        // 初始化配置
-        configManager = new ConfigManager(this);
-        configManager.loadConfig();
-
-        // 初始化NPC管理器
-        npcManager = new NpcManager(this);
+        // 根据实际可用的提供者初始化NPC管理器
+        if ("FANCYNPCS".equals(actualProvider)) {
+            fancyNpcManager = new com.magicbili.islandnpc.managers.FancyNpcManager(this);
+            getLogger().info("使用 FancyNpcs 作为 NPC 提供者");
+        } else {
+            npcManager = new NpcManager(this);
+            getLogger().info("使用 Citizens 作为 NPC 提供者");
+        }
 
         // 注册监听器
         registerListeners();
@@ -51,45 +59,81 @@ public class IslandNpcPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // 只保存我们的映射关系，Citizens会自动保存NPC数据
+        // 保存NPC数据
         if (npcManager != null) {
             npcManager.saveAllNpcData();
-            getLogger().info("已保存岛屿-NPC映射关系");
+            getLogger().info("已保存 Citizens NPC 数据");
+        }
+        if (fancyNpcManager != null) {
+            fancyNpcManager.saveAllNpcData();
+            getLogger().info("已保存 FancyNpcs NPC 数据");
         }
 
         getLogger().info("IslandNpc 插件已禁用！");
     }
 
     /**
-     * 检查必需的依赖插件
+     * 检查必需的依赖插件并确定可用的NPC提供者
+     * @return 可用的NPC提供者名称（CITIZENS或FANCYNPCS），如果都不可用则返回null
      */
-    private boolean checkDependencies() {
-        boolean hasAll = true;
-
+    private String checkDependenciesAndDetermineProvider() {
         // 检查SuperiorSkyblock2
         if (Bukkit.getPluginManager().getPlugin("SuperiorSkyblock2") == null) {
             getLogger().severe("未找到 SuperiorSkyblock2 插件！");
-            hasAll = false;
+            return null;
         } else {
             getLogger().info("已找到 SuperiorSkyblock2 插件");
         }
 
-        // 检查Citizens
-        if (Bukkit.getPluginManager().getPlugin("Citizens") == null) {
-            getLogger().severe("未找到 Citizens 插件！");
-            hasAll = false;
-        } else {
-            getLogger().info("已找到 Citizens 插件");
+        // 检查可用的NPC提供者插件
+        boolean hasCitizens = Bukkit.getPluginManager().getPlugin("Citizens") != null;
+        boolean hasFancyNpcs = Bukkit.getPluginManager().getPlugin("FancyNpcs") != null;
+        
+        if (!hasCitizens && !hasFancyNpcs) {
+            getLogger().severe("未找到任何 NPC 提供者插件！");
+            getLogger().severe("请安装 Citizens 或 FancyNpcs 插件");
+            return null;
         }
-
+        
+        // 获取配置中指定的提供者
+        String configuredProvider = configManager.getNpcProvider();
+        
+        // 尝试使用配置的提供者
+        if ("FANCYNPCS".equals(configuredProvider)) {
+            if (hasFancyNpcs) {
+                getLogger().info("已找到 FancyNpcs 插件");
+                return "FANCYNPCS";
+            } else {
+                getLogger().warning("配置中指定使用 FancyNpcs，但未找到该插件");
+                if (hasCitizens) {
+                    getLogger().info("自动切换到 Citizens 插件");
+                    getLogger().info("已找到 Citizens 插件");
+                    return "CITIZENS";
+                }
+            }
+        } else {
+            // 配置为CITIZENS或其他值
+            if (hasCitizens) {
+                getLogger().info("已找到 Citizens 插件");
+                return "CITIZENS";
+            } else {
+                getLogger().warning("配置中指定使用 Citizens，但未找到该插件");
+                if (hasFancyNpcs) {
+                    getLogger().info("自动切换到 FancyNpcs 插件");
+                    getLogger().info("已找到 FancyNpcs 插件");
+                    return "FANCYNPCS";
+                }
+            }
+        }
+        
         // 检查FancyDialogs（可选）
         if (Bukkit.getPluginManager().getPlugin("FancyDialogs") != null) {
             getLogger().info("已找到 FancyDialogs 插件");
         } else {
             getLogger().warning("未找到 FancyDialogs 插件，对话功能将不可用");
         }
-
-        return hasAll;
+        
+        return null;
     }
 
     /**
@@ -97,7 +141,15 @@ public class IslandNpcPlugin extends JavaPlugin {
      */
     private void registerListeners() {
         getServer().getPluginManager().registerEvents(new PlayerIslandListener(this), this);
-        getServer().getPluginManager().registerEvents(new NpcInteractListener(this), this);
+        
+        // 根据实际使用的NPC提供者注册对应的监听器
+        String npcProvider = (fancyNpcManager != null) ? "FANCYNPCS" : "CITIZENS";
+        if ("FANCYNPCS".equals(npcProvider)) {
+            getServer().getPluginManager().registerEvents(new com.magicbili.islandnpc.listeners.FancyNpcInteractListener(this), this);
+        } else {
+            getServer().getPluginManager().registerEvents(new NpcInteractListener(this), this);
+        }
+        
         getServer().getPluginManager().registerEvents(new com.magicbili.islandnpc.listeners.WorldLoadListener(this), this);
         getLogger().info("事件监听器已注册");
     }
@@ -117,7 +169,12 @@ public class IslandNpcPlugin extends JavaPlugin {
      */
     public void reloadPlugin() {
         configManager.loadConfig();
-        npcManager.reloadAllNpcs();
+        if (npcManager != null) {
+            npcManager.reloadAllNpcs();
+        }
+        if (fancyNpcManager != null) {
+            fancyNpcManager.reloadAllNpcs();
+        }
         getLogger().info("插件配置已重载");
     }
 
@@ -131,5 +188,9 @@ public class IslandNpcPlugin extends JavaPlugin {
 
     public NpcManager getNpcManager() {
         return npcManager;
+    }
+
+    public com.magicbili.islandnpc.managers.FancyNpcManager getFancyNpcManager() {
+        return fancyNpcManager;
     }
 }

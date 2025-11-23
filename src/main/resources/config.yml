@@ -1,8 +1,16 @@
 # IslandNpc Configuration File
 # Author: magicbili
 
+# Configuration version - DO NOT EDIT THIS MANUALLY
+# This is used to automatically update the config file when the plugin updates
+config-version: 1
+
 # NPC Settings
 npc:
+  # NPC provider: CITIZENS, FANCYNPCS
+  # Determines which NPC plugin to use
+  provider: "CITIZENS"
+  
   # NPC entity type (VILLAGER, PLAYER, ZOMBIE, SKELETON, etc.)
   # See: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/entity/EntityType.html
   entity-type: "VILLAGER"
@@ -19,6 +27,16 @@ npc:
     y: 0.0
     z: 5.0
   
+  # NPC rotation (yaw and pitch)
+  rotation:
+    # Yaw: horizontal rotation (0-360)
+    # 0 = South, 90 = West, 180 = North, 270 = East
+    yaw: 180.0
+    
+    # Pitch: vertical rotation (-90 to 90)
+    # -90 = looking up, 0 = looking straight, 90 = looking down
+    pitch: 0.0
+  
   # Hologram settings
   hologram:
     # Enable hologram display above NPC
@@ -30,8 +48,29 @@ npc:
       - "&7Right click to interact"
       - "&6Welcome to your island!"
     
-    # Line height spacing (default: -1 for automatic)
-    line-height: -1
+    # Position settings
+    position:
+      # Offset above NPC head (in blocks, default: 2.8)
+      y-offset: 2.8
+      
+      # Space between each line (in blocks, default: 0.3)
+      line-spacing: 0.3
+    
+    # Background settings
+    background:
+      # Enable text background (default: false for transparent)
+      # Note: If 'enabled' is true but color alpha is 0, no background will be shown
+      enabled: false
+      
+      # Background color in ARGB format (Alpha, Red, Green, Blue)
+      # Alpha: 0 = fully transparent (NO background), 1-255 = semi to fully opaque
+      # Examples:
+      #   0x00000000 = no background (alpha=0)
+      #   0x40000000 = semi-transparent black (alpha=64)
+      #   0x80000000 = half-transparent black (alpha=128)
+      #   0xC0000000 = mostly opaque black (alpha=192)
+      #   0xFF000000 = fully opaque black (alpha=255)
+      color: 0x00000000
     
     # View range in blocks (-1 for default)
     view-range: 30
@@ -49,6 +88,8 @@ messages:
   # 命令消息
   npc-hidden: "&a岛屿NPC已隐藏！"
   npc-shown: "&a岛屿NPC现在可见！"
+  npc-toggled-hidden: "&a岛屿NPC已切换为隐藏状态！"
+  npc-toggled-visible: "&a岛屿NPC已切换为可见状态！"
   npc-moved: "&a岛屿NPC已移动到你的位置！"
   npc-created: "&a岛屿NPC已创建！"
   npc-deleted: "&a岛屿NPC已删除！"
@@ -77,6 +118,7 @@ messages:
   help-header: "&6&l========== 岛屿NPC命令 =========="
   help-hide: "&e/islandnpc hide &7- 隐藏你的岛屿NPC"
   help-show: "&e/islandnpc show &7- 显示你的岛屿NPC"
+  help-toggle: "&e/islandnpc toggle &7- 切换你的岛屿NPC可见性"
   help-move: "&e/islandnpc move &7- 将NPC移动到你的位置"
   help-fixall: "&e/islandnpc fixall &7- 修复在线玩家缺失的NPC（管理员）"
   help-create: "&e/islandnpc create &7- 创建岛屿NPC（管理员）"
