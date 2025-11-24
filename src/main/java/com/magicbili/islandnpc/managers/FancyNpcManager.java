@@ -294,8 +294,45 @@ public class FancyNpcManager {
         if (islandNpcs.containsKey(islandUUID)) {
             Npc existingNpc = FancyNpcsPlugin.get().getNpcManager().getNpcById(islandNpcs.get(islandUUID));
             if (existingNpc != null) {
-                debug("NPC 已存在，跳过重新创建");
-                return; // NPC已存在
+                debug("找到现有NPC对象，ID: " + existingNpc.getData().getId() + ", EntityID: " + existingNpc.getEntityId());
+                
+                // 检查NPC是否真正spawn（通过检查是否有玩家能看到它）
+                boolean isSpawned = false;
+                try {
+                    // 检查NPC实体是否存在：尝试获取bukkit实体
+                    if (existingNpc.getEntityId() > 0) {
+                        org.bukkit.World world = existingNpc.getData().getLocation().getWorld();
+                        if (world != null) {
+                            // 尝试从世界获取实体
+                            org.bukkit.entity.Entity entity = world.getEntities().stream()
+                                .filter(e -> e.getEntityId() == existingNpc.getEntityId())
+                                .findFirst()
+                                .orElse(null);
+                            isSpawned = (entity != null);
+                            debug("实体检查结果: " + (isSpawned ? "实体存在" : "实体不存在"));
+                        } else {
+                            debug("NPC所在世界为null");
+                        }
+                    }
+                } catch (Exception e) {
+                    debug("检查NPC实体时出错: " + e.getMessage());
+                }
+                
+                if (isSpawned) {
+                    debug("NPC 已存在且已spawn，跳过重新创建");
+                    return;
+                } else {
+                    debug("NPC 对象存在但实体未spawn，需要重新spawn");
+                    // 清理旧的NPC注册，准备重新创建
+                    try {
+                        FancyNpcsPlugin.get().getNpcManager().removeNpc(existingNpc);
+                        debug("已移除旧的NPC注册");
+                    } catch (Exception e) {
+                        debug("移除旧NPC失败: " + e.getMessage());
+                    }
+                    // 清理旧的全息图引用（世界卸载时TextDisplay实体已被移除）
+                    removeHologram(islandUUID);
+                }
             }
         }
         
@@ -403,12 +440,16 @@ public class FancyNpcManager {
         // 保存映射
         islandNpcs.put(islandUUID, npcData.getId());
         hiddenNpcs.put(islandUUID, hidden);
-        plugin.getLogger().info("[SUCCESS] 成功重新创建 NPC: " + npcData.getId());
         
         // 创建独立的全息图 TextDisplay 实体
         if (!hidden) {
             createHologram(islandUUID, location);
+            debug("已创建全息图");
         }
+        
+        plugin.getLogger().info("[SUCCESS] 成功重新创建 NPC: " + npcData.getId() + 
+            " (岛屿: " + islandUUID + ", 隐藏: " + hidden + 
+            ", EntityID: " + npc.getEntityId() + ")");
     }
 
     public void moveNpc(UUID islandUUID, Location newLocation) {
@@ -606,6 +647,22 @@ public class FancyNpcManager {
             debug("全息图未启用，跳过创建");
             return;
         }
+        
+        // 验证位置和世界
+        if (npcLocation == null) {
+            debug("NPC位置为null，无法创建全息图");
+            return;
+        }
+        
+        if (npcLocation.getWorld() == null) {
+            debug("NPC所在世界为null，无法创建全息图");
+            return;
+        }
+        
+        debug("NPC位置: 世界=" + npcLocation.getWorld().getName() + 
+            ", X=" + npcLocation.getX() + 
+            ", Y=" + npcLocation.getY() + 
+            ", Z=" + npcLocation.getZ());
 
         List<String> lines = plugin.getConfigManager().getHologramLines();
         if (lines == null || lines.isEmpty()) {

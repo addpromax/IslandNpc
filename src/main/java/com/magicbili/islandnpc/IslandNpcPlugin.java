@@ -1,9 +1,7 @@
 package com.magicbili.islandnpc;
 
-import com.bgsoftware.superiorskyblock.api.SuperiorSkyblockAPI;
 import com.magicbili.islandnpc.commands.IslandNpcCommand;
 import com.magicbili.islandnpc.config.ConfigManager;
-import com.magicbili.islandnpc.listeners.NpcInteractListener;
 import com.magicbili.islandnpc.listeners.PlayerIslandListener;
 import com.magicbili.islandnpc.managers.NpcManager;
 import org.bukkit.Bukkit;
@@ -74,7 +72,7 @@ public class IslandNpcPlugin extends JavaPlugin {
 
     /**
      * 检查必需的依赖插件并确定可用的NPC提供者
-     * @return 可用的NPC提供者名称（CITIZENS或FANCYNPCS），如果都不可用则返回null
+     * @return 可用的NPC提供者名称（CITIZENS 或 FANCYNPCS），如果都不可用则返回null
      */
     private String checkDependenciesAndDetermineProvider() {
         // 检查SuperiorSkyblock2
@@ -107,7 +105,6 @@ public class IslandNpcPlugin extends JavaPlugin {
                 getLogger().warning("配置中指定使用 FancyNpcs，但未找到该插件");
                 if (hasCitizens) {
                     getLogger().info("自动切换到 Citizens 插件");
-                    getLogger().info("已找到 Citizens 插件");
                     return "CITIZENS";
                 }
             }
@@ -120,7 +117,6 @@ public class IslandNpcPlugin extends JavaPlugin {
                 getLogger().warning("配置中指定使用 Citizens，但未找到该插件");
                 if (hasFancyNpcs) {
                     getLogger().info("自动切换到 FancyNpcs 插件");
-                    getLogger().info("已找到 FancyNpcs 插件");
                     return "FANCYNPCS";
                 }
             }
@@ -142,16 +138,52 @@ public class IslandNpcPlugin extends JavaPlugin {
     private void registerListeners() {
         getServer().getPluginManager().registerEvents(new PlayerIslandListener(this), this);
         
-        // 根据实际使用的NPC提供者注册对应的监听器
-        String npcProvider = (fancyNpcManager != null) ? "FANCYNPCS" : "CITIZENS";
-        if ("FANCYNPCS".equals(npcProvider)) {
-            getServer().getPluginManager().registerEvents(new com.magicbili.islandnpc.listeners.FancyNpcInteractListener(this), this);
-        } else {
-            getServer().getPluginManager().registerEvents(new NpcInteractListener(this), this);
+        // 注册 NPC 交互监听器 - 根据安装的插件动态注册
+        // 此监听器处理所有 NPC 提供商的交互，并实现智能路由：
+        // - 有任务时 → TypeWriter 处理
+        // - 无任务时 → 打开 FancyDialogs 菜单
+        com.magicbili.islandnpc.listeners.NpcInteractionHandler handler = 
+            new com.magicbili.islandnpc.listeners.NpcInteractionHandler(this);
+        
+        // 只在对应插件存在时注册监听器
+        if (Bukkit.getPluginManager().getPlugin("Citizens") != null) {
+            try {
+                getServer().getPluginManager().registerEvents(
+                    new com.magicbili.islandnpc.listeners.CitizensNpcInteractListener(this, handler), 
+                    this
+                );
+                getLogger().info("已注册 Citizens NPC 交互监听器");
+            } catch (Exception e) {
+                getLogger().warning("注册 Citizens 监听器失败: " + e.getMessage());
+            }
         }
         
-        getServer().getPluginManager().registerEvents(new com.magicbili.islandnpc.listeners.WorldLoadListener(this), this);
-        getLogger().info("事件监听器已注册");
+        if (Bukkit.getPluginManager().getPlugin("FancyNpcs") != null) {
+            try {
+                getServer().getPluginManager().registerEvents(
+                    new com.magicbili.islandnpc.listeners.FancyNpcsInteractListener(this, handler), 
+                    this
+                );
+                getLogger().info("已注册 FancyNpcs NPC 交互监听器");
+            } catch (Exception e) {
+                getLogger().warning("注册 FancyNpcs 监听器失败: " + e.getMessage());
+            }
+        }
+        
+        // 世界加载监听器 - 只在 ASP 插件存在时注册
+        if (Bukkit.getPluginManager().getPlugin("AdvancedSlimePaper") != null) {
+            try {
+                getServer().getPluginManager().registerEvents(
+                    new com.magicbili.islandnpc.listeners.WorldLoadListener(this), 
+                    this
+                );
+                getLogger().info("已注册世界加载监听器");
+            } catch (Exception e) {
+                getLogger().warning("注册世界加载监听器失败: " + e.getMessage());
+            }
+        }
+        
+        getLogger().info("事件监听器注册完成");
     }
 
     /**
@@ -193,4 +225,5 @@ public class IslandNpcPlugin extends JavaPlugin {
     public com.magicbili.islandnpc.managers.FancyNpcManager getFancyNpcManager() {
         return fancyNpcManager;
     }
+
 }

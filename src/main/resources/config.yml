@@ -9,6 +9,8 @@ config-version: 1
 npc:
   # NPC provider: CITIZENS, FANCYNPCS
   # Determines which NPC plugin to use
+  # - CITIZENS: Uses Citizens 2 plugin (stable, traditional)
+  # - FANCYNPCS: Uses FancyNpcs plugin (modern, feature-rich)
   provider: "CITIZENS"
   
   # NPC entity type (VILLAGER, PLAYER, ZOMBIE, SKELETON, etc.)
@@ -19,6 +21,9 @@ npc:
   skin: ""
   
   # Dialog ID to open when right-clicking NPC (FancyDialogs)
+  # This is used when player has NO active TypeWriter quest/dialogue
+  # If TypeWriter Extension is installed, the plugin will automatically detect
+  # whether to trigger TypeWriter content or open this dialog
   dialog-id: "island_menu"
   
   # Spawn offset from island center
