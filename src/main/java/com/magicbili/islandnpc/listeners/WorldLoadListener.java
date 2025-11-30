@@ -4,8 +4,6 @@ import com.bgsoftware.superiorskyblock.api.SuperiorSkyblockAPI;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.infernalsuite.asp.api.events.LoadSlimeWorldEvent;
 import com.magicbili.islandnpc.IslandNpcPlugin;
-import de.oliver.fancynpcs.api.FancyNpcsPlugin;
-import de.oliver.fancynpcs.api.Npc;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
@@ -62,12 +60,12 @@ public class WorldLoadListener implements Listener {
         
         // 防止与 SlimeWorld 事件重复处理
         if (!tryAddProcessingWorld(worldName)) {
-            debug("[世界加载] 世界已在处理中，跳过");
+            debug("[世界加载] 已由 SlimeWorld 事件处理，跳过");
             return;
         }
         
-        // 延迟处理，确保世界完全加载（80 ticks = 4秒）
-        scheduleNpcRespawn(worldName, 80L);
+        // 延迟处理，确保世界完全加载（20 ticks = 1秒）
+        scheduleNpcRespawn(worldName, 20L, false);
     }
     
     /**
@@ -92,8 +90,8 @@ public class WorldLoadListener implements Listener {
             return;
         }
         
-        // 延迟处理，确保世界完全加载（60 ticks = 3秒）
-        scheduleNpcRespawn(worldName, 60L);
+        // 延迟处理，SlimeWorld 加载很快，只需短暂延迟（10 ticks = 0.5秒）
+        scheduleNpcRespawn(worldName, 10L, true);
     }
     
     /**
@@ -131,16 +129,20 @@ public class WorldLoadListener implements Listener {
     
     /**
      * 安排延迟任务重新生成 NPC
+     * @param worldName 世界名称
+     * @param delayTicks 延迟时间（ticks）
+     * @param isSlimeWorld 是否为 SlimeWorld
      */
-    private void scheduleNpcRespawn(String worldName, long delayTicks) {
-        debug("安排延迟任务: " + delayTicks + " ticks 后处理世界 " + worldName);
+    private void scheduleNpcRespawn(String worldName, long delayTicks, boolean isSlimeWorld) {
+        debug("安排延迟任务: " + delayTicks + " ticks 后处理世界 " + worldName + 
+              " (SlimeWorld: " + isSlimeWorld + ")");
         
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             try {
                 World world = Bukkit.getWorld(worldName);
                 if (world != null) {
                     debug("延迟处理: 开始重新创建 NPC - " + worldName);
-                    respawnNPCsInWorld(world);
+                    respawnNPCsInWorld(world, isSlimeWorld);
                 } else {
                     plugin.getLogger().warning("延迟处理时找不到世界: " + worldName);
                 }
@@ -157,20 +159,26 @@ public class WorldLoadListener implements Listener {
     
     /**
      * 重新生成指定世界中的所有 NPC
+     * @param world 世界
+     * @param isSlimeWorld 是否为 SlimeWorld（用于过滤）
      */
-    private void respawnNPCsInWorld(World world) {
+    private void respawnNPCsInWorld(World world, boolean isSlimeWorld) {
         if (world == null) return;
         
-        int count = processIslandsInWorld(world, (islandUUID) -> {
-            if (plugin.getFancyNpcManager() != null) {
-                plugin.getFancyNpcManager().recreateNpcForIsland(islandUUID);
-            } else if (plugin.getNpcManager() != null) {
-                plugin.getNpcManager().recreateNpcForIsland(islandUUID);
+        debug("开始处理世界 " + world.getName() + " 的 NPC (SlimeWorld: " + isSlimeWorld + ")");
+        
+        int count = processIslandsInWorld(world, isSlimeWorld, (islandUUID) -> {
+            if (plugin.getNpcProvider() != null) {
+                debug("尝试重新创建 NPC: " + islandUUID);
+                boolean success = plugin.getNpcProvider().recreateNpc(islandUUID);
+                debug("重新创建 NPC " + islandUUID + " 结果: " + success);
             }
         });
         
         if (count > 0) {
             debug("重新创建了 " + count + " 个 NPC");
+        } else {
+            debug("世界 " + world.getName() + " 中没有找到匹配的岛屿配置 (期望 SlimeWorld: " + isSlimeWorld + ")");
         }
     }
     
@@ -180,36 +188,11 @@ public class WorldLoadListener implements Listener {
     private void cleanupNPCsInWorld(World world) {
         if (world == null) return;
         
-        int count = processIslandsInWorld(world, (islandUUID) -> {
-            if (plugin.getFancyNpcManager() != null) {
-                Npc npc = plugin.getFancyNpcManager().getIslandNpc(islandUUID);
-                if (npc != null) {
-                    try {
-                        FancyNpcsPlugin.get().getNpcManager().removeNpc(npc);
-                    } catch (Exception e) {
-                        plugin.getLogger().warning("清理 NPC 失败: " + e.getMessage());
-                    }
-                }
-            }
-            // Citizens 的 NPC 会自动清理
-        });
-        
-        if (count > 0) {
-            debug("清理了 " + count + " 个 NPC 引用");
-        }
-    }
-    
-    /**
-     * 处理指定世界中的所有岛屿
-     * @param world 世界
-     * @param action 对每个岛屿执行的操作
-     * @return 处理的岛屿数量
-     */
-    private int processIslandsInWorld(World world, java.util.function.Consumer<UUID> action) {
+        // 清理时不区分世界类型，处理所有岛屿
         org.bukkit.configuration.ConfigurationSection section = 
             plugin.getConfigManager().getNpcDataConfig().getConfigurationSection("npcs");
         
-        if (section == null) return 0;
+        if (section == null) return;
         
         int count = 0;
         for (String key : section.getKeys(false)) {
@@ -218,8 +201,61 @@ public class WorldLoadListener implements Listener {
                 String worldName = section.getString(key + ".location.world");
                 
                 if (worldName != null && worldName.equals(world.getName())) {
-                    action.accept(islandUUID);
+                    // NPC提供者会在世界重新加载时自动重建NPC
+                    // 这里不需要特殊处理
                     count++;
+                }
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("无效的岛屿 UUID: " + key);
+            }
+        }
+        
+        if (count > 0) {
+            debug("处理了 " + count + " 个岛屿的 NPC");
+        }
+    }
+    
+    /**
+     * 处理指定世界中的所有岛屿
+     * @param world 世界
+     * @param filterSlimeWorld 是否只处理 SlimeWorld 岛屿（true=只处理SlimeWorld，false=只处理普通世界）
+     * @param action 对每个岛屿执行的操作
+     * @return 处理的岛屿数量
+     */
+    private int processIslandsInWorld(World world, boolean filterSlimeWorld, java.util.function.Consumer<UUID> action) {
+        org.bukkit.configuration.ConfigurationSection section = 
+            plugin.getConfigManager().getNpcDataConfig().getConfigurationSection("npcs");
+        
+        if (section == null) return 0;
+        
+        int count = 0;
+        int skipped = 0;
+        for (String key : section.getKeys(false)) {
+            try {
+                UUID islandUUID = UUID.fromString(key);
+                String worldName = section.getString(key + ".location.world");
+                
+                if (worldName != null && worldName.equals(world.getName())) {
+                    // 性能优化：使用 is_slimeworld 标记过滤
+                    // 注意：如果配置中没有 is_slimeworld 字段（旧数据），需要动态检测
+                    boolean isSlimeWorld;
+                    if (section.contains(key + ".is_slimeworld")) {
+                        isSlimeWorld = section.getBoolean(key + ".is_slimeworld");
+                    } else {
+                        // 旧数据没有标记，动态检测世界类型
+                        isSlimeWorld = com.magicbili.islandnpc.utils.WorldUtils.isSlimeWorld(world);
+                        debug("岛屿 " + key + " 缺少 is_slimeworld 标记，动态检测结果: " + isSlimeWorld);
+                    }
+                    
+                    // 只处理匹配的世界类型
+                    if (isSlimeWorld == filterSlimeWorld) {
+                        debug("处理岛屿: " + islandUUID + " (SlimeWorld: " + isSlimeWorld + ")");
+                        action.accept(islandUUID);
+                        count++;
+                    } else {
+                        skipped++;
+                        debug("跳过岛屿: " + islandUUID + " (期望 SlimeWorld: " + filterSlimeWorld + ", 实际: " + isSlimeWorld + ")");
+                    }
                 }
             } catch (IllegalArgumentException e) {
                 plugin.getLogger().warning("无效的岛屿 UUID: " + key);
@@ -228,6 +264,11 @@ public class WorldLoadListener implements Listener {
                 e.printStackTrace();
             }
         }
+        
+        if (skipped > 0) {
+            debug("跳过了 " + skipped + " 个不匹配的岛屿类型");
+        }
+        
         return count;
     }
 }

@@ -11,7 +11,7 @@ import java.io.IOException;
 public class ConfigManager {
 
     // 当前配置文件版本号 - 更新配置时需要增加此版本号
-    private static final int CURRENT_CONFIG_VERSION = 1;
+    private static final int CURRENT_CONFIG_VERSION = 2;
     
     private final IslandNpcPlugin plugin;
     private FileConfiguration config;
@@ -150,9 +150,17 @@ public class ConfigManager {
                 }
                 break;
                 
+            case 2:
+                // 从版本1到版本2的迁移: 添加全息图提供者配置
+                if (!config.contains("npc.hologram.provider")) {
+                    config.set("npc.hologram.provider", "FANCYHOLOGRAMS");
+                    plugin.getLogger().info("添加了新的配置项: npc.hologram.provider");
+                }
+                break;
+                
             // 未来版本的迁移逻辑在这里添加
-            // case 2:
-            //     // 从版本1到版本2的迁移
+            // case 3:
+            //     // 从版本2到版本3的迁移
             //     break;
         }
         

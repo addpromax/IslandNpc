@@ -33,26 +33,38 @@ public class FancyNpcsInteractListener implements Listener {
         de.oliver.fancynpcs.api.Npc npc = event.getNpc();
         Player player = event.getPlayer();
         
-        // 获取岛屿 UUID（从 FancyNpcManager 获取）
-        if (plugin.getFancyNpcManager() != null) {
-            UUID islandUUID = plugin.getFancyNpcManager().getIslandUUIDFromNpc(npc);
-            if (islandUUID == null) return;
-            
-            // 验证玩家岛屿
-            SuperiorPlayer sPlayer = SuperiorSkyblockAPI.getPlayer(player);
-            Island playerIsland = sPlayer.getIsland();
-            
-            if (playerIsland == null || !playerIsland.getUniqueId().equals(islandUUID)) {
-                player.sendMessage("§c这不是你的岛屿 NPC！");
-                event.setCancelled(true);
-                return;
-            }
-            
-            // 处理交互
-            boolean shouldCancel = handler.handleInteraction(player, islandUUID);
-            if (shouldCancel) {
-                event.setCancelled(true);
+        // 获取岛屿 UUID（从 NPC 数据获取）
+        String npcId = npc.getData().getId();
+        UUID islandUUID = findIslandUUIDByNpcId(npcId);
+        if (islandUUID == null) return;
+        
+        // 验证玩家岛屿
+        SuperiorPlayer sPlayer = SuperiorSkyblockAPI.getPlayer(player);
+        Island playerIsland = sPlayer.getIsland();
+        
+        if (playerIsland == null || !playerIsland.getUniqueId().equals(islandUUID)) {
+            player.sendMessage("§c这不是你的岛屿 NPC！");
+            event.setCancelled(true);
+            return;
+        }
+        
+        // 处理交互
+        handler.handleInteraction(player, islandUUID);
+    }
+    
+    /**
+     * 通过NPC ID查找岛屿UUID
+     */
+    private UUID findIslandUUIDByNpcId(String npcId) {
+        if (plugin.getNpcProvider() == null) return null;
+        
+        for (UUID islandUUID : plugin.getNpcProvider().getAllIslandUUIDs()) {
+            // 这里需要检查NPC是否属于这个岛屿
+            // 由于FancyNpcProvider使用岛屿UUID作为映射,我们可以直接检查
+            if (plugin.getNpcProvider().hasNpc(islandUUID)) {
+                return islandUUID;
             }
         }
+        return null;
     }
 }

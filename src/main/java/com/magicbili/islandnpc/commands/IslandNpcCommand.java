@@ -4,7 +4,6 @@ import com.bgsoftware.superiorskyblock.api.SuperiorSkyblockAPI;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.magicbili.islandnpc.IslandNpcPlugin;
-import net.citizensnpcs.api.npc.NPC;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -81,29 +80,18 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
 
         UUID islandUUID = island.getUniqueId();
         
-        // 检查NPC管理器是否可用
-        if (plugin.getNpcManager() == null && plugin.getFancyNpcManager() == null) {
-            player.sendMessage(plugin.getConfigManager().getPrefix() + "§cNPC管理器未初始化，请联系管理员");
+        // 检查NPC提供者是否可用
+        if (plugin.getNpcProvider() == null) {
+            player.sendMessage(plugin.getConfigManager().getPrefix() + "§cNPC提供者未初始化，请联系管理员");
             return true;
         }
         
-        boolean isHidden;
-        if (plugin.getNpcManager() != null) {
-            isHidden = plugin.getNpcManager().isNpcHidden(islandUUID);
-        } else {
-            isHidden = plugin.getFancyNpcManager().isNpcHidden(islandUUID);
-        }
-            
-        if (isHidden) {
+        if (plugin.getNpcProvider().isNpcHidden(islandUUID)) {
             player.sendMessage(plugin.getConfigManager().getMessage("npc-already-hidden"));
             return true;
         }
 
-        if (plugin.getNpcManager() != null) {
-            plugin.getNpcManager().hideNpc(islandUUID);
-        } else {
-            plugin.getFancyNpcManager().hideNpc(islandUUID);
-        }
+        plugin.getNpcProvider().hideNpc(islandUUID);
         player.sendMessage(plugin.getConfigManager().getMessage("npc-hidden"));
         return true;
     }
@@ -128,29 +116,18 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
 
         UUID islandUUID = island.getUniqueId();
         
-        // 检查NPC管理器是否可用
-        if (plugin.getNpcManager() == null && plugin.getFancyNpcManager() == null) {
-            player.sendMessage(plugin.getConfigManager().getPrefix() + "§cNPC管理器未初始化，请联系管理员");
+        // 检查NPC提供者是否可用
+        if (plugin.getNpcProvider() == null) {
+            player.sendMessage(plugin.getConfigManager().getPrefix() + "§cNPC提供者未初始化，请联系管理员");
             return true;
         }
         
-        boolean isHidden;
-        if (plugin.getNpcManager() != null) {
-            isHidden = plugin.getNpcManager().isNpcHidden(islandUUID);
-        } else {
-            isHidden = plugin.getFancyNpcManager().isNpcHidden(islandUUID);
-        }
-            
-        if (!isHidden) {
+        if (!plugin.getNpcProvider().isNpcHidden(islandUUID)) {
             player.sendMessage(plugin.getConfigManager().getMessage("npc-already-visible"));
             return true;
         }
 
-        if (plugin.getNpcManager() != null) {
-            plugin.getNpcManager().showNpc(islandUUID);
-        } else {
-            plugin.getFancyNpcManager().showNpc(islandUUID);
-        }
+        plugin.getNpcProvider().showNpc(islandUUID);
         player.sendMessage(plugin.getConfigManager().getMessage("npc-shown"));
         return true;
     }
@@ -175,32 +152,16 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
 
         UUID islandUUID = island.getUniqueId();
         
-        // 检查NPC管理器是否可用
-        if (plugin.getNpcManager() == null && plugin.getFancyNpcManager() == null) {
-            player.sendMessage(plugin.getConfigManager().getPrefix() + "§cNPC管理器未初始化，请联系管理员");
+        if (plugin.getNpcProvider() == null) {
+            player.sendMessage(plugin.getConfigManager().getPrefix() + "§cNPC提供者未初始化，请联系管理员");
             return true;
         }
         
-        boolean isHidden;
-        if (plugin.getNpcManager() != null) {
-            isHidden = plugin.getNpcManager().isNpcHidden(islandUUID);
-        } else {
-            isHidden = plugin.getFancyNpcManager().isNpcHidden(islandUUID);
-        }
-        
-        if (isHidden) {
-            if (plugin.getNpcManager() != null) {
-                plugin.getNpcManager().showNpc(islandUUID);
-            } else {
-                plugin.getFancyNpcManager().showNpc(islandUUID);
-            }
+        if (plugin.getNpcProvider().isNpcHidden(islandUUID)) {
+            plugin.getNpcProvider().showNpc(islandUUID);
             player.sendMessage(plugin.getConfigManager().getMessage("npc-toggled-visible"));
         } else {
-            if (plugin.getNpcManager() != null) {
-                plugin.getNpcManager().hideNpc(islandUUID);
-            } else {
-                plugin.getFancyNpcManager().hideNpc(islandUUID);
-            }
+            plugin.getNpcProvider().hideNpc(islandUUID);
             player.sendMessage(plugin.getConfigManager().getMessage("npc-toggled-hidden"));
         }
         
@@ -228,21 +189,17 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
         UUID islandUUID = island.getUniqueId();
         Location newLocation = player.getLocation();
         
-        if (plugin.getNpcManager() != null) {
-            NPC npc = plugin.getNpcManager().getIslandNpc(islandUUID);
-            if (npc == null) {
-                player.sendMessage(plugin.getConfigManager().getMessage("npc-not-found"));
-                return true;
-            }
-            plugin.getNpcManager().moveNpc(islandUUID, newLocation);
-        } else {
-            de.oliver.fancynpcs.api.Npc npc = plugin.getFancyNpcManager().getIslandNpc(islandUUID);
-            if (npc == null) {
-                player.sendMessage(plugin.getConfigManager().getMessage("npc-not-found"));
-                return true;
-            }
-            plugin.getFancyNpcManager().moveNpc(islandUUID, newLocation);
+        if (plugin.getNpcProvider() == null) {
+            player.sendMessage(plugin.getConfigManager().getPrefix() + "§cNPC提供者未初始化，请联系管理员");
+            return true;
         }
+        
+        if (!plugin.getNpcProvider().hasNpc(islandUUID)) {
+            player.sendMessage(plugin.getConfigManager().getMessage("npc-not-found"));
+            return true;
+        }
+        
+        plugin.getNpcProvider().moveNpc(islandUUID, newLocation);
         player.sendMessage(plugin.getConfigManager().getMessage("npc-moved"));
         return true;
     }
@@ -265,14 +222,19 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        boolean success = false;
-        if (plugin.getNpcManager() != null) {
-            NPC npc = plugin.getNpcManager().createIslandNpc(island);
-            success = npc != null;
-        } else {
-            de.oliver.fancynpcs.api.Npc npc = plugin.getFancyNpcManager().createIslandNpc(island);
-            success = npc != null;
+        if (plugin.getNpcProvider() == null || plugin.getIslandProvider() == null) {
+            player.sendMessage(plugin.getConfigManager().getPrefix() + "§c提供者未初始化，请联系管理员");
+            return true;
         }
+        
+        UUID islandUUID = island.getUniqueId();
+        Location center = plugin.getIslandProvider().getIslandCenter(islandUUID);
+        if (center == null) {
+            player.sendMessage(plugin.getConfigManager().getPrefix() + "§c无法获取岛屿中心位置");
+            return true;
+        }
+        
+        boolean success = plugin.getNpcProvider().createNpc(islandUUID, center);
         
         if (success) {
             player.sendMessage(plugin.getConfigManager().getMessage("npc-created"));
@@ -301,11 +263,13 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
         }
 
         UUID islandUUID = island.getUniqueId();
-        if (plugin.getNpcManager() != null) {
-            plugin.getNpcManager().deleteNpc(islandUUID);
-        } else {
-            plugin.getFancyNpcManager().deleteNpc(islandUUID);
+        
+        if (plugin.getNpcProvider() == null) {
+            player.sendMessage(plugin.getConfigManager().getPrefix() + "§cNPC提供者未初始化，请联系管理员");
+            return true;
         }
+        
+        plugin.getNpcProvider().deleteNpc(islandUUID);
         player.sendMessage(plugin.getConfigManager().getMessage("npc-deleted"));
         return true;
     }
@@ -313,6 +277,11 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
     private boolean handleFixAll(CommandSender sender) {
         if (!sender.hasPermission("islandnpc.admin")) {
             sender.sendMessage(plugin.getConfigManager().getMessage("no-permission"));
+            return true;
+        }
+
+        if (plugin.getNpcProvider() == null || plugin.getIslandProvider() == null) {
+            sender.sendMessage(plugin.getConfigManager().getPrefix() + "§c提供者未初始化，请联系管理员");
             return true;
         }
 
@@ -331,34 +300,13 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
             total++;
             UUID islandUUID = island.getUniqueId();
             
-            boolean needsFix = false;
-            if (plugin.getNpcManager() != null) {
-                NPC existingNpc = plugin.getNpcManager().getIslandNpc(islandUUID);
-                needsFix = (existingNpc == null || !existingNpc.isSpawned());
-                
-                if (needsFix) {
-                    if (existingNpc != null) {
-                        plugin.getNpcManager().deleteNpc(islandUUID);
-                    }
-                    NPC newNpc = plugin.getNpcManager().createIslandNpc(island);
-                    if (newNpc != null) {
-                        fixed++;
-                        plugin.getLogger().info("Fixed NPC for island: " + islandUUID + " (Owner: " + onlinePlayer.getName() + ")");
-                    }
-                }
-            } else {
-                de.oliver.fancynpcs.api.Npc existingNpc = plugin.getFancyNpcManager().getIslandNpc(islandUUID);
-                needsFix = (existingNpc == null);
-                
-                if (needsFix) {
-                    if (existingNpc != null) {
-                        plugin.getFancyNpcManager().deleteNpc(islandUUID);
-                    }
-                    de.oliver.fancynpcs.api.Npc newNpc = plugin.getFancyNpcManager().createIslandNpc(island);
-                    if (newNpc != null) {
-                        fixed++;
-                        plugin.getLogger().info("Fixed NPC for island: " + islandUUID + " (Owner: " + onlinePlayer.getName() + ")");
-                    }
+            // 检查NPC是否需要修复
+            if (!plugin.getNpcProvider().hasNpc(islandUUID)) {
+                // NPC不存在，创建新的
+                Location center = plugin.getIslandProvider().getIslandCenter(islandUUID);
+                if (center != null && plugin.getNpcProvider().createNpc(islandUUID, center)) {
+                    fixed++;
+                    plugin.getLogger().info("Fixed NPC for island: " + islandUUID + " (Owner: " + onlinePlayer.getName() + ")");
                 }
             }
         }

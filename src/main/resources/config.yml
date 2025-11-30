@@ -3,7 +3,7 @@
 
 # Configuration version - DO NOT EDIT THIS MANUALLY
 # This is used to automatically update the config file when the plugin updates
-config-version: 1
+config-version: 2
 
 # NPC Settings
 npc:
@@ -11,7 +11,9 @@ npc:
   # Determines which NPC plugin to use
   # - CITIZENS: Uses Citizens 2 plugin (stable, traditional)
   # - FANCYNPCS: Uses FancyNpcs plugin (modern, feature-rich)
-  provider: "CITIZENS"
+  # If both plugins are found, this setting will be used
+  # If only one is found, that one will be used automatically
+  provider: "FANCYNPCS"
   
   # NPC entity type (VILLAGER, PLAYER, ZOMBIE, SKELETON, etc.)
   # See: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/entity/EntityType.html
@@ -42,16 +44,23 @@ npc:
     # -90 = looking up, 0 = looking straight, 90 = looking down
     pitch: 0.0
   
-  # Hologram settings (使用 FancyHolograms 插件)
-  # Hologram settings (using FancyHolograms plugin)
+  # Hologram settings
+  # 全息图设置（支持 FancyHolograms 和 DecentHolograms）
   hologram:
     # Enable hologram display above NPC
-    # 启用全息图显示（需要安装 FancyHolograms 插件）
+    # 启用全息图显示（需要安装全息图插件）
     enabled: true
     
+    # Hologram provider: FANCYHOLOGRAMS, DECENTHOLOGRAMS
+    # 全息图提供者：FANCYHOLOGRAMS（默认）, DECENTHOLOGRAMS
+    # If both plugins are found, this setting will be used
+    # If only one is found, that one will be used automatically
+    # If none are found, holograms will be disabled
+    provider: "FANCYHOLOGRAMS"
+    
     # Hologram lines (supports color codes with &, placeholders, and multiple lines)
-    # 全息图文本行（支持 & 颜色代码、占位符和多行文本）
-    # FancyHolograms 会自动处理多行文本的间距
+    # 全息图文本行（支持 & 颜代码、占位符 {owner} 和多行文本）
+    # Placeholders: {owner} = 岛主名称
     lines:
       - "&e&l⭐ Island NPC ⭐"
       - "&7Right click to interact"
@@ -70,13 +79,11 @@ npc:
       # 注意：此配置项已废弃，FancyHolograms 自动管理行间距
       line-spacing: 0.3
     
-    # Background settings
-    # 背景设置（FancyHolograms 支持自定义背景颜色）
+    # Background settings (FancyHolograms only)
+    # 背景设置（仅FancyHolograms支持，DecentHolograms不支持背景）
     background:
       # Enable text background (default: false for transparent)
       # 启用文本背景（默认: false 为透明）
-      # Note: If 'enabled' is true but color alpha is 0, no background will be shown
-      # 注意：如果 'enabled' 为 true 但颜色的 alpha 为 0，则不会显示背景
       enabled: false
       
       # Background color in ARGB format (Alpha, Red, Green, Blue)
@@ -89,7 +96,7 @@ npc:
       #   0x80000000 = half-transparent black (alpha=128) / 半透明黑色（透明度=128）
       #   0xC0000000 = mostly opaque black (alpha=192) / 大部分不透明黑色（透明度=192）
       #   0xFF000000 = fully opaque black (alpha=255) / 完全不透明黑色（透明度=255）
-      color: 0x00000000
+      color: 0x40000000
     
     # View range in blocks (-1 for default)
     # 可视范围（格数，-1 为默认值）

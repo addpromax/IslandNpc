@@ -6,7 +6,7 @@
 
     <groupId>com.magicbili</groupId>
     <artifactId>IslandNpc</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.6</version>
     <packaging>jar</packaging>
 
     <name>IslandNpc</name>
@@ -41,6 +41,22 @@
         <repository>
             <id>is-snapshots</id>
             <url>https://repo.infernalsuite.com/repository/maven-snapshots/</url>
+        </repository>
+        
+        <!-- CodeMC Repository for BentoBox -->
+        <repository>
+            <id>codemc-snapshots</id>
+            <url>https://repo.codemc.org/repository/maven-snapshots</url>
+        </repository>
+        <repository>
+            <id>codemc-repo</id>
+            <url>https://repo.codemc.org/repository/maven-public/</url>
+        </repository>
+        
+        <!-- JitPack Repository for DecentHolograms -->
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
         </repository>
     </repositories>
 
@@ -102,7 +118,26 @@
             <groupId>com.fancyinnovations</groupId>
             <artifactId>FancyHolograms</artifactId>
             <version>2.8.0.160</version>
-            <scope>provided</scope>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/FancyHolograms-2.8.0.160.jar</systemPath>
+        </dependency>
+
+        <!-- BentoBox - Local Dependency -->
+        <dependency>
+            <groupId>world.bentobox</groupId>
+            <artifactId>bentobox</artifactId>
+            <version>3.10.1</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/BentoBox-3.10.1.jar</systemPath>
+        </dependency>
+        
+        <!-- DecentHolograms - Local Dependency -->
+        <dependency>
+            <groupId>eu.decentsoftware</groupId>
+            <artifactId>decentholograms</artifactId>
+            <version>2.9.8</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/DecentHolograms-2.9.8.jar</systemPath>
         </dependency>
     </dependencies>
     
