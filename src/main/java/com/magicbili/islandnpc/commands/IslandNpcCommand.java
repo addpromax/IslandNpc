@@ -81,9 +81,18 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
 
         UUID islandUUID = island.getUniqueId();
         
-        boolean isHidden = plugin.getNpcManager() != null ? 
-            plugin.getNpcManager().isNpcHidden(islandUUID) : 
-            plugin.getFancyNpcManager().isNpcHidden(islandUUID);
+        // 检查NPC管理器是否可用
+        if (plugin.getNpcManager() == null && plugin.getFancyNpcManager() == null) {
+            player.sendMessage(plugin.getConfigManager().getPrefix() + "§cNPC管理器未初始化，请联系管理员");
+            return true;
+        }
+        
+        boolean isHidden;
+        if (plugin.getNpcManager() != null) {
+            isHidden = plugin.getNpcManager().isNpcHidden(islandUUID);
+        } else {
+            isHidden = plugin.getFancyNpcManager().isNpcHidden(islandUUID);
+        }
             
         if (isHidden) {
             player.sendMessage(plugin.getConfigManager().getMessage("npc-already-hidden"));
@@ -119,9 +128,18 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
 
         UUID islandUUID = island.getUniqueId();
         
-        boolean isHidden = plugin.getNpcManager() != null ? 
-            plugin.getNpcManager().isNpcHidden(islandUUID) : 
-            plugin.getFancyNpcManager().isNpcHidden(islandUUID);
+        // 检查NPC管理器是否可用
+        if (plugin.getNpcManager() == null && plugin.getFancyNpcManager() == null) {
+            player.sendMessage(plugin.getConfigManager().getPrefix() + "§cNPC管理器未初始化，请联系管理员");
+            return true;
+        }
+        
+        boolean isHidden;
+        if (plugin.getNpcManager() != null) {
+            isHidden = plugin.getNpcManager().isNpcHidden(islandUUID);
+        } else {
+            isHidden = plugin.getFancyNpcManager().isNpcHidden(islandUUID);
+        }
             
         if (!isHidden) {
             player.sendMessage(plugin.getConfigManager().getMessage("npc-already-visible"));
@@ -157,9 +175,18 @@ public class IslandNpcCommand implements CommandExecutor, TabCompleter {
 
         UUID islandUUID = island.getUniqueId();
         
-        boolean isHidden = plugin.getNpcManager() != null ? 
-            plugin.getNpcManager().isNpcHidden(islandUUID) : 
-            plugin.getFancyNpcManager().isNpcHidden(islandUUID);
+        // 检查NPC管理器是否可用
+        if (plugin.getNpcManager() == null && plugin.getFancyNpcManager() == null) {
+            player.sendMessage(plugin.getConfigManager().getPrefix() + "§cNPC管理器未初始化，请联系管理员");
+            return true;
+        }
+        
+        boolean isHidden;
+        if (plugin.getNpcManager() != null) {
+            isHidden = plugin.getNpcManager().isNpcHidden(islandUUID);
+        } else {
+            isHidden = plugin.getFancyNpcManager().isNpcHidden(islandUUID);
+        }
         
         if (isHidden) {
             if (plugin.getNpcManager() != null) {

@@ -1,7 +1,6 @@
 package com.magicbili.islandnpc.listeners;
 
 import com.magicbili.islandnpc.IslandNpcPlugin;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -12,8 +11,8 @@ import java.util.UUID;
  * 
  * 交互逻辑：
  * 1. 检测玩家是否有与该 NPC 相关的 TypeWriter 任务
- * 2. 如果有任务 → 返回 false（不取消事件，让 TypeWriter 处理）
- * 3. 如果没有任务 → 打开 FancyDialogs 菜单，返回 true（取消事件）
+ * 2. 如果有任务 → 触发 TypeWriter 事件，返回 false（不取消事件，让 TypeWriter 处理）
+ * 3. 如果没有任务 → 返回 false（不取消事件，让其他插件处理）
  */
 public class NpcInteractionHandler {
     
@@ -38,10 +37,9 @@ public class NpcInteractionHandler {
             debug("触发 TypeWriter 交互");
             return false; // 不取消事件
         } else {
-            // 没有任务 - 打开 FancyDialogs 菜单
-            debug("打开 FancyDialogs 菜单");
-            openFancyDialogsMenu(player, islandUUID);
-            return true; // 取消事件，防止其他交互
+            // 没有任务 - 不处理，让其他插件处理
+            debug("没有 TypeWriter 任务，不处理交互");
+            return false; // 不取消事件，让其他插件处理
         }
     }
     
@@ -84,31 +82,6 @@ public class NpcInteractionHandler {
             debug("检查任务失败: " + e.getMessage());
             return false;
         }
-    }
-    
-    /**
-     * 打开 FancyDialogs 菜单
-     */
-    private void openFancyDialogsMenu(Player player, UUID islandUUID) {
-        String dialogId = plugin.getConfigManager().getDialogId();
-        
-        if (dialogId == null || dialogId.isEmpty()) {
-            debug("对话 ID 未配置");
-            player.sendMessage("§c对话 ID 未配置！");
-            return;
-        }
-        
-        // 检查 FancyDialogs 是否存在
-        if (Bukkit.getPluginManager().getPlugin("FancyDialogs") == null) {
-            debug("FancyDialogs 插件未安装");
-            player.sendMessage("§c菜单系统未安装！");
-            return;
-        }
-        
-        // 执行打开对话的命令
-        debug("打开对话: " + dialogId);
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), 
-            "fancydialogs open " + dialogId + " " + player.getName());
     }
     
     /**

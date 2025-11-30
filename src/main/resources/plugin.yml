@@ -13,6 +13,7 @@ softdepend:
   - Citizens
   - FancyNpcs
   - FancyDialogs
+  - FancyHolograms
 
 commands:
   islandnpc:

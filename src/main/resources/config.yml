@@ -42,42 +42,57 @@ npc:
     # -90 = looking up, 0 = looking straight, 90 = looking down
     pitch: 0.0
   
-  # Hologram settings
+  # Hologram settings (使用 FancyHolograms 插件)
+  # Hologram settings (using FancyHolograms plugin)
   hologram:
     # Enable hologram display above NPC
+    # 启用全息图显示（需要安装 FancyHolograms 插件）
     enabled: true
     
     # Hologram lines (supports color codes with &, placeholders, and multiple lines)
+    # 全息图文本行（支持 & 颜色代码、占位符和多行文本）
+    # FancyHolograms 会自动处理多行文本的间距
     lines:
       - "&e&l⭐ Island NPC ⭐"
       - "&7Right click to interact"
       - "&6Welcome to your island!"
     
     # Position settings
+    # 位置设置
     position:
       # Offset above NPC head (in blocks, default: 2.8)
+      # NPC 头顶上方的偏移量（格数，默认: 2.8）
+      # FancyHolograms 会自动处理多行文本的垂直间距
       y-offset: 2.8
       
       # Space between each line (in blocks, default: 0.3)
+      # 行间距（格数，默认: 0.3）
+      # 注意：此配置项已废弃，FancyHolograms 自动管理行间距
       line-spacing: 0.3
     
     # Background settings
+    # 背景设置（FancyHolograms 支持自定义背景颜色）
     background:
       # Enable text background (default: false for transparent)
+      # 启用文本背景（默认: false 为透明）
       # Note: If 'enabled' is true but color alpha is 0, no background will be shown
+      # 注意：如果 'enabled' 为 true 但颜色的 alpha 为 0，则不会显示背景
       enabled: false
       
       # Background color in ARGB format (Alpha, Red, Green, Blue)
+      # 背景颜色（ARGB 格式：透明度、红、绿、蓝）
       # Alpha: 0 = fully transparent (NO background), 1-255 = semi to fully opaque
-      # Examples:
-      #   0x00000000 = no background (alpha=0)
-      #   0x40000000 = semi-transparent black (alpha=64)
-      #   0x80000000 = half-transparent black (alpha=128)
-      #   0xC0000000 = mostly opaque black (alpha=192)
-      #   0xFF000000 = fully opaque black (alpha=255)
+      # 透明度: 0 = 完全透明（无背景），1-255 = 半透明到完全不透明
+      # Examples / 示例:
+      #   0x00000000 = no background (alpha=0) / 无背景（透明度=0）
+      #   0x40000000 = semi-transparent black (alpha=64) / 半透明黑色（透明度=64）
+      #   0x80000000 = half-transparent black (alpha=128) / 半透明黑色（透明度=128）
+      #   0xC0000000 = mostly opaque black (alpha=192) / 大部分不透明黑色（透明度=192）
+      #   0xFF000000 = fully opaque black (alpha=255) / 完全不透明黑色（透明度=255）
       color: 0x00000000
     
     # View range in blocks (-1 for default)
+    # 可视范围（格数，-1 为默认值）
     view-range: 30
 
 # Permission Settings

@@ -1,6 +1,9 @@
 package com.magicbili.islandnpc.managers;
 
 import com.bgsoftware.superiorskyblock.api.island.Island;
+import de.oliver.fancyholograms.api.FancyHologramsPlugin;
+import de.oliver.fancyholograms.api.data.TextHologramData;
+import de.oliver.fancyholograms.api.hologram.Hologram;
 import com.magicbili.islandnpc.IslandNpcPlugin;
 import de.oliver.fancynpcs.api.FancyNpcsPlugin;
 import de.oliver.fancynpcs.api.Npc;
@@ -8,28 +11,34 @@ import de.oliver.fancynpcs.api.NpcData;
 import de.oliver.fancynpcs.api.actions.ActionTrigger;
 import de.oliver.fancynpcs.api.actions.NpcAction;
 import org.bukkit.ChatColor;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Display;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.TextDisplay;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 public class FancyNpcManager {
 
     private final IslandNpcPlugin plugin;
     private final Map<UUID, String> islandNpcs;
     private final Map<UUID, Boolean> hiddenNpcs;
-    private final Map<UUID, List<TextDisplay>> hologramDisplays; // 存储每个岛屿的全息图实体
+    private final Map<UUID, Hologram> hologramMap; // 存储每个岛屿的FancyHolograms全息图
 
     public FancyNpcManager(IslandNpcPlugin plugin) {
         this.plugin = plugin;
         this.islandNpcs = new HashMap<>();
         this.hiddenNpcs = new HashMap<>();
-        this.hologramDisplays = new HashMap<>();
+        this.hologramMap = new HashMap<>();
         
-        // 延迟加载NPC数据，等待FancyNpcs完全加载完成
+        // 延迟加载NPC数据，等待FancyNpcs和FancyHolograms完全加载完成
         org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> {
             loadNpcData();
         }, 100L);
@@ -181,19 +190,7 @@ public class FancyNpcManager {
         // 不再使用 NPC 的 displayName 作为全息图，保持为空
         // 全息图将在 NPC 创建后使用独立的 TextDisplay 实体
 
-        // 设置对话框动作
-        String dialogId = plugin.getConfigManager().getDialogId();
-        debug("对话框 ID 配置: " + (dialogId == null || dialogId.isEmpty() ? "未设置" : dialogId));
-        if (dialogId != null && !dialogId.isEmpty()) {
-            // 为 RIGHT_CLICK 添加打开对话框的动作
-            NpcAction openDialogAction = FancyNpcsPlugin.get().getActionManager().getActionByName("open_dialog");
-            if (openDialogAction != null) {
-                npcData.addAction(ActionTrigger.RIGHT_CLICK, 0, openDialogAction, dialogId);
-                debug("已添加对话框动作: " + dialogId);
-            } else {
-                debug("无法找到 open_dialog 动作！FancyDialogs 可能未安装");
-            }
-        }
+        // 不再添加对话框动作，只使用 TypeWriter 交互
 
         // 创建NPC（按照正确的顺序）
         debug("开始创建 NPC 实例...");
@@ -361,7 +358,6 @@ public class FancyNpcManager {
         
         Location location = new Location(world, x, y, z, yaw, pitch);
         boolean hidden = section.getBoolean("hidden", false);
-        String dialogId = section.getString("dialog-id");
         
         debug(String.format("从配置读取位置: 世界=%s, X=%.2f, Y=%.2f, Z=%.2f, 朝向=Yaw:%.1f/Pitch:%.1f, 隐藏=%b", 
             worldName, x, y, z, yaw, pitch, hidden));
@@ -390,13 +386,7 @@ public class FancyNpcManager {
         // 不再使用 NPC 的 displayName 作为全息图
         // 全息图将在 NPC 创建后使用独立的 TextDisplay 实体
         
-        // 设置对话框动作
-        if (dialogId != null && !dialogId.isEmpty()) {
-            NpcAction openDialogAction = FancyNpcsPlugin.get().getActionManager().getActionByName("open_dialog");
-            if (openDialogAction != null) {
-                npcData.addAction(ActionTrigger.RIGHT_CLICK, 0, openDialogAction, dialogId);
-            }
-        }
+        // 不再添加对话框动作，只使用 TypeWriter 交互
         
         // 创建NPC（按照正确的顺序）
         debug("开始重新创建 NPC...");
@@ -577,19 +567,9 @@ public class FancyNpcManager {
                 // 移除旧的全息图
                 removeHologram(islandUUID);
                 
-                // 更新对话框ID
-                String dialogId = plugin.getConfigManager().getDialogId();
-                if (dialogId != null && !dialogId.isEmpty()) {
-                    // 清除旧的动作
-                    npc.getData().setActions(ActionTrigger.RIGHT_CLICK, new ArrayList<>());
-                    
-                    // 添加新的对话框动作
-                    NpcAction openDialogAction = FancyNpcsPlugin.get().getActionManager().getActionByName("open_dialog");
-                    if (openDialogAction != null) {
-                        npc.getData().addAction(ActionTrigger.RIGHT_CLICK, 0, openDialogAction, dialogId);
-                        debug("已更新对话框动作: " + dialogId);
-                    }
-                }
+                // 清除所有 RIGHT_CLICK 动作（移除旧的对话框动作）
+                npc.getData().setActions(ActionTrigger.RIGHT_CLICK, new ArrayList<>());
+                debug("已清除所有 RIGHT_CLICK 动作（包括对话框动作）");
                 
                 // 刷新NPC
                 npc.removeForAll();
@@ -640,11 +620,17 @@ public class FancyNpcManager {
     }
 
     /**
-     * 为岛屿创建全息图 TextDisplay 实体
+     * 为岛屿创建FancyHolograms全息图
      */
     private void createHologram(UUID islandUUID, Location npcLocation) {
         if (!plugin.getConfigManager().isHologramEnabled()) {
             debug("全息图未启用，跳过创建");
+            return;
+        }
+        
+        // 检查FancyHolograms是否可用
+        if (!FancyHologramsPlugin.isEnabled()) {
+            plugin.getLogger().warning("FancyHolograms插件未加载，无法创建全息图");
             return;
         }
         
@@ -670,85 +656,87 @@ public class FancyNpcManager {
             return;
         }
 
-        debug("开始创建全息图 TextDisplay，行数: " + lines.size());
+        debug("开始创建FancyHolograms全息图，行数: " + lines.size());
         
         // 清除旧的全息图（如果存在）
         removeHologram(islandUUID);
         
-        List<TextDisplay> displays = new ArrayList<>();
         // 从配置文件读取位置设置
         double yOffset = plugin.getConfigManager().getHologramYOffset();
-        double lineSpacing = plugin.getConfigManager().getHologramLineSpacing();
         
         // 读取背景设置
         boolean backgroundEnabled = plugin.getConfigManager().isHologramBackgroundEnabled();
         int backgroundColor = plugin.getConfigManager().getHologramBackgroundColor();
         
-        debug(String.format("全息图位置: Y偏移=%.2f, 行间距=%.2f", yOffset, lineSpacing));
+        debug(String.format("全息图位置: Y偏移=%.2f", yOffset));
         debug(String.format("背景设置: 启用=%b, 颜色=0x%08X", backgroundEnabled, backgroundColor));
         
-        // 从上到下创建全息图行
-        for (int i = 0; i < lines.size(); i++) {
-            String line = lines.get(i);
-            String coloredLine = ChatColor.translateAlternateColorCodes('&', line);
+        try {
+            // 计算全息图位置（在NPC上方）
+            Location hologramLoc = npcLocation.clone().add(0, yOffset, 0);
             
-            // 计算该行的位置（从上到下）
-            Location displayLoc = npcLocation.clone().add(0, yOffset - (i * lineSpacing), 0);
+            // 创建全息图名称（使用岛屿UUID确保唯一性）
+            String hologramName = "island_hologram_" + islandUUID.toString();
             
-            try {
-                // 创建 TextDisplay 实体
-                TextDisplay display = (TextDisplay) npcLocation.getWorld().spawnEntity(
-                    displayLoc, 
-                    EntityType.TEXT_DISPLAY
-                );
+            // 使用 V2 API 创建 TextHologramData
+            TextHologramData hologramData = new TextHologramData(hologramName, hologramLoc);
+            
+            // 设置文本行（支持颜色代码）
+            List<String> coloredLines = new ArrayList<>();
+            for (String line : lines) {
+                coloredLines.add(ChatColor.translateAlternateColorCodes('&', line));
+            }
+            hologramData.setText(coloredLines);
+            
+            // 设置文本对齐方式
+            hologramData.setTextAlignment(TextDisplay.TextAlignment.CENTER);
+            
+            // 设置文本阴影
+            hologramData.setTextShadow(true);
+            
+            // 设置透视（穿透方块可见）
+            hologramData.setSeeThrough(true);
+            
+            // 设置背景颜色
+            if (!backgroundEnabled) {
+                // 不启用背景，设置为完全透明
+                hologramData.setBackground(Hologram.TRANSPARENT);
+                debug("设置全息图背景为透明");
+            } else {
+                // 启用背景，使用配置的颜色
+                Color bgColor = Color.fromARGB(backgroundColor);
+                hologramData.setBackground(bgColor);
+                debug(String.format("设置全息图背景颜色: ARGB=0x%08X", backgroundColor));
+            }
+            
+            // 设置为非持久化（不保存到FancyHolograms配置文件）
+            hologramData.setPersistent(false);
+            
+            // 使用 HologramManager 创建全息图
+            Hologram hologram = FancyHologramsPlugin.get()
+                .getHologramManager()
+                .create(hologramData);
+            
+            if (hologram != null) {
+                // 添加到 HologramManager（重要！）
+                FancyHologramsPlugin.get().getHologramManager().addHologram(hologram);
                 
-                // 设置文本
-                display.setText(coloredLine);
-                
-                // 设置显示属性
-                display.setBillboard(Display.Billboard.CENTER); // 始终面向玩家
-                display.setAlignment(TextDisplay.TextAlignment.CENTER); // 居中对齐
-                display.setSeeThrough(true); // 透过方块可见
-                display.setShadowed(true); // 文字阴影
-                display.setLineWidth(200); // 行宽
-                
-                // 设置背景（根据配置）
-                // 提取 ARGB 分量
-                int alpha = (backgroundColor >> 24) & 0xFF;
-                int red = (backgroundColor >> 16) & 0xFF;
-                int green = (backgroundColor >> 8) & 0xFF;
-                int blue = backgroundColor & 0xFF;
-                
-                // 根据FancyHolograms的实现：始终显式设置背景颜色
-                // 如果不需要背景，设置为完全透明（alpha=0）
-                if (!backgroundEnabled || alpha == 0) {
-                    // 设置完全透明的背景色（Color.fromARGB(0) 即 TRANSPARENT）
-                    org.bukkit.Color transparentColor = org.bukkit.Color.fromARGB(0, 0, 0, 0);
-                    display.setBackgroundColor(transparentColor);
-                    debug(String.format("行 %d: 设置透明背景 ARGB(0,0,0,0)", i + 1));
-                } else {
-                    // 显式设置有颜色的背景
-                    org.bukkit.Color color = org.bukkit.Color.fromARGB(alpha, red, green, blue);
-                    display.setBackgroundColor(color);
-                    debug(String.format("行 %d: 设置背景颜色 ARGB(%d,%d,%d,%d)", i + 1, alpha, red, green, blue));
+                // 为所有在线玩家更新显示状态
+                for (org.bukkit.entity.Player player : plugin.getServer().getOnlinePlayers()) {
+                    hologram.updateShownStateFor(player);
                 }
                 
-                // 设置为不可交互的实体
-                display.setGravity(false);
-                display.setInvulnerable(true);
-                display.setPersistent(false); // 不持久化到世界文件
-                
-                displays.add(display);
-                debug("创建全息图行 " + (i + 1) + ": '" + coloredLine + "'");
-            } catch (Exception e) {
-                debug("创建全息图 TextDisplay 失败: " + e.getMessage());
-                e.printStackTrace();
+                // 保存到映射
+                hologramMap.put(islandUUID, hologram);
+                debug("成功创建并注册FancyHolograms全息图: " + hologramName);
+                debug("全息图可见性: " + hologramData.getVisibility() + ", 可见距离: " + hologramData.getVisibilityDistance());
+            } else {
+                plugin.getLogger().warning("创建全息图失败: " + hologramName);
             }
-        }
-        
-        if (!displays.isEmpty()) {
-            hologramDisplays.put(islandUUID, displays);
-            debug("成功创建 " + displays.size() + " 个全息图 TextDisplay");
+            
+        } catch (Exception e) {
+            plugin.getLogger().severe("创建FancyHolograms全息图失败: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -756,56 +744,71 @@ public class FancyNpcManager {
      * 移除岛屿的全息图
      */
     private void removeHologram(UUID islandUUID) {
-        List<TextDisplay> displays = hologramDisplays.remove(islandUUID);
-        if (displays != null && !displays.isEmpty()) {
-            debug("移除 " + displays.size() + " 个全息图 TextDisplay");
-            for (TextDisplay display : displays) {
-                if (display != null && !display.isDead()) {
-                    display.remove();
+        Hologram hologram = hologramMap.remove(islandUUID);
+        if (hologram != null) {
+            debug("移除FancyHolograms全息图: " + hologram.getData().getName());
+            try {
+                // 从FancyHolograms管理器中移除
+                if (FancyHologramsPlugin.isEnabled() && FancyHologramsPlugin.get() != null) {
+                    hologram.deleteHologram();
+                    FancyHologramsPlugin.get().getHologramManager().removeHologram(hologram);
                 }
+            } catch (NullPointerException e) {
+                plugin.getLogger().warning("FancyHolograms未初始化，无法注销全息图: " + e.getMessage());
+            } catch (Exception e) {
+                plugin.getLogger().warning("移除全息图时出错: " + e.getMessage());
             }
         }
     }
+    
+    /**
+     * 清理所有全息图（插件禁用时调用）
+     */
+    public void cleanupAllHolograms() {
+        debug("开始清理所有全息图，共 " + hologramMap.size() + " 个");
+        
+        // 使用副本避免并发修改异常
+        for (UUID islandUUID : new ArrayList<>(hologramMap.keySet())) {
+            removeHologram(islandUUID);
+        }
+        
+        hologramMap.clear();
+        debug("全息图清理完成");
+    }
 
     /**
-     * 隐藏岛屿的全息图（通过传送到虚空）
+     * 隐藏岛屿的全息图
      */
     private void hideHologram(UUID islandUUID) {
-        List<TextDisplay> displays = hologramDisplays.get(islandUUID);
-        if (displays != null && !displays.isEmpty()) {
-            debug("隐藏 " + displays.size() + " 个全息图 TextDisplay");
-            for (TextDisplay display : displays) {
-                if (display != null && !display.isDead()) {
-                    // 传送到虚空下方使其不可见
-                    Location hideLoc = display.getLocation().clone();
-                    hideLoc.setY(-1000);
-                    display.teleport(hideLoc);
+        Hologram hologram = hologramMap.get(islandUUID);
+        if (hologram != null) {
+            debug("隐藏FancyHolograms全息图: " + hologram.getData().getName());
+            try {
+                // 对所有在线玩家隐藏全息图
+                if (FancyHologramsPlugin.isEnabled()) {
+                    hologram.hideHologram(plugin.getServer().getOnlinePlayers());
                 }
+            } catch (Exception e) {
+                debug("隐藏全息图时出错: " + e.getMessage());
             }
         }
     }
 
     /**
-     * 显示岛屿的全息图（恢复到正确位置）
+     * 显示岛屿的全息图
      */
     private void showHologram(UUID islandUUID) {
-        Npc npc = getIslandNpc(islandUUID);
-        if (npc != null) {
-            Location npcLocation = npc.getData().getLocation();
-            List<TextDisplay> displays = hologramDisplays.get(islandUUID);
-            
-            if (displays != null && !displays.isEmpty()) {
-                debug("显示 " + displays.size() + " 个全息图 TextDisplay");
-                double yOffset = plugin.getConfigManager().getHologramYOffset();
-                double lineSpacing = plugin.getConfigManager().getHologramLineSpacing();
-                
-                for (int i = 0; i < displays.size(); i++) {
-                    TextDisplay display = displays.get(i);
-                    if (display != null && !display.isDead()) {
-                        Location displayLoc = npcLocation.clone().add(0, yOffset - (i * lineSpacing), 0);
-                        display.teleport(displayLoc);
-                    }
+        Hologram hologram = hologramMap.get(islandUUID);
+        if (hologram != null) {
+            debug("显示FancyHolograms全息图: " + hologram.getData().getName());
+            try {
+                // 对所有在线玩家显示全息图
+                if (FancyHologramsPlugin.isEnabled()) {
+                    hologram.showHologram(plugin.getServer().getOnlinePlayers());
+                    hologram.refreshHologram(plugin.getServer().getOnlinePlayers());
                 }
+            } catch (Exception e) {
+                debug("显示全息图时出错: " + e.getMessage());
             }
         }
     }
@@ -814,18 +817,26 @@ public class FancyNpcManager {
      * 移动岛屿的全息图到新位置
      */
     private void moveHologram(UUID islandUUID, Location newNpcLocation) {
-        List<TextDisplay> displays = hologramDisplays.get(islandUUID);
-        if (displays != null && !displays.isEmpty()) {
-            debug("移动 " + displays.size() + " 个全息图 TextDisplay");
-            double yOffset = plugin.getConfigManager().getHologramYOffset();
-            double lineSpacing = plugin.getConfigManager().getHologramLineSpacing();
-            
-            for (int i = 0; i < displays.size(); i++) {
-                TextDisplay display = displays.get(i);
-                if (display != null && !display.isDead()) {
-                    Location displayLoc = newNpcLocation.clone().add(0, yOffset - (i * lineSpacing), 0);
-                    display.teleport(displayLoc);
+        Hologram hologram = hologramMap.get(islandUUID);
+        if (hologram != null) {
+            debug("移动FancyHolograms全息图: " + hologram.getData().getName());
+            try {
+                // 计算新的全息图位置
+                double yOffset = plugin.getConfigManager().getHologramYOffset();
+                Location newHologramLoc = newNpcLocation.clone().add(0, yOffset, 0);
+                
+                // 更新全息图位置
+                hologram.getData().setLocation(newHologramLoc);
+                
+                // 刷新全息图显示
+                if (FancyHologramsPlugin.isEnabled()) {
+                    hologram.queueUpdate();
+                    hologram.refreshHologram(plugin.getServer().getOnlinePlayers());
                 }
+                
+                debug("全息图已移动到新位置");
+            } catch (Exception e) {
+                debug("移动全息图时出错: " + e.getMessage());
             }
         }
     }

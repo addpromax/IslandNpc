@@ -6,7 +6,7 @@
 
     <groupId>com.magicbili</groupId>
     <artifactId>IslandNpc</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.4</version>
     <packaging>jar</packaging>
 
     <name>IslandNpc</name>
@@ -96,7 +96,25 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/libs/FancyNpcs-2.8.0.312.jar</systemPath>
         </dependency>
+
+        <!-- FancyHolograms - Local Dependency -->
+        <dependency>
+            <groupId>com.fancyinnovations</groupId>
+            <artifactId>FancyHolograms</artifactId>
+            <version>2.8.0.160</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
+    
+    <!-- 确保 system 依赖被包含在编译路径中 -->
+    <profiles>
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+    </profiles>
 
     <build>
         <finalName>${project.name}-${project.version}</finalName>
@@ -117,6 +135,10 @@
                     <source>17</source>
                     <target>17</target>
                     <proc>none</proc>
+                    <!-- 确保包含 system scope 依赖 -->
+                    <compilerArgs>
+                        <arg>-verbose</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             
@@ -130,8 +152,42 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <!-- 最小化JAR，移除未使用的类 -->
+                            <minimizeJar>true</minimizeJar>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <!-- 排除元数据文件 -->
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <!-- 创建依赖精简的JAR -->
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            
+            <!-- JAR压缩优化 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <addMavenDescriptor>false</addMavenDescriptor>
+                        <compress>true</compress>
+                        <manifestEntries>
+                            <Built-By>IslandNpc</Built-By>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
             </plugin>
         </plugins>
     </build>

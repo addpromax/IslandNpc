@@ -2,6 +2,7 @@ package com.magicbili.islandnpc.listeners;
 
 import com.bgsoftware.superiorskyblock.api.events.IslandCreateEvent;
 import com.bgsoftware.superiorskyblock.api.events.IslandDisbandEvent;
+import com.bgsoftware.superiorskyblock.api.events.IslandEnterEvent;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.magicbili.islandnpc.IslandNpcPlugin;
 import org.bukkit.Bukkit;
@@ -45,6 +46,23 @@ public class PlayerIslandListener implements Listener {
                 }
             }
         }, 20L);
+    }
+    
+    /**
+     * 监听玩家进入岛屿事件
+     * 仅用于调试日志，NPC 的创建由世界加载事件处理
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onIslandEnter(IslandEnterEvent event) {
+        Island island = event.getIsland();
+        if (island == null) {
+            return;
+        }
+        
+        debug("玩家 " + event.getPlayer().getName() + " 进入岛屿: " + island.getUniqueId());
+        
+        // 不再在此处创建 NPC，由世界加载事件统一处理
+        // 这样可以避免重复创建的问题
     }
     
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
