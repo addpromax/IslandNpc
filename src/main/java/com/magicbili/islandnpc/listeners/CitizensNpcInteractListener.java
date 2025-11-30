@@ -36,7 +36,11 @@ public class CitizensNpcInteractListener implements Listener {
         
         // 检查是否是岛屿 NPC
         String islandUUIDStr = npc.data().get("islandUUID");
-        if (islandUUIDStr == null) return;
+        
+        // 如果不是岛屿 NPC，直接返回，不处理
+        if (islandUUIDStr == null || islandUUIDStr.isEmpty()) {
+            return;
+        }
         
         try {
             UUID islandUUID = UUID.fromString(islandUUIDStr);

@@ -402,4 +402,20 @@ public class FancyNpcProvider extends AbstractNpcProvider {
         }
         debug("NPC数据加载完成");
     }
+    
+    /**
+     * 根据 NPC ID 查找岛屿 UUID
+     * @param npcId NPC ID
+     * @return 岛屿 UUID，如果不是岛屿 NPC 则返回 null
+     */
+    public UUID getIslandUUIDByNpcId(String npcId) {
+        if (npcId == null) return null;
+        
+        for (Map.Entry<UUID, String> entry : islandNpcs.entrySet()) {
+            if (entry.getValue().equals(npcId)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
 }

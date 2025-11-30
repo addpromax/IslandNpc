@@ -36,7 +36,11 @@ public class FancyNpcsInteractListener implements Listener {
         // 获取岛屿 UUID（从 NPC 数据获取）
         String npcId = npc.getData().getId();
         UUID islandUUID = findIslandUUIDByNpcId(npcId);
-        if (islandUUID == null) return;
+        
+        // 如果不是岛屿 NPC，直接返回，不处理
+        if (islandUUID == null) {
+            return;
+        }
         
         // 验证玩家岛屿
         SuperiorPlayer sPlayer = SuperiorSkyblockAPI.getPlayer(player);
@@ -58,13 +62,13 @@ public class FancyNpcsInteractListener implements Listener {
     private UUID findIslandUUIDByNpcId(String npcId) {
         if (plugin.getNpcProvider() == null) return null;
         
-        for (UUID islandUUID : plugin.getNpcProvider().getAllIslandUUIDs()) {
-            // 这里需要检查NPC是否属于这个岛屿
-            // 由于FancyNpcProvider使用岛屿UUID作为映射,我们可以直接检查
-            if (plugin.getNpcProvider().hasNpc(islandUUID)) {
-                return islandUUID;
-            }
+        // 检查是否是 FancyNpcProvider
+        if (plugin.getNpcProvider() instanceof com.magicbili.islandnpc.npc.FancyNpcProvider) {
+            com.magicbili.islandnpc.npc.FancyNpcProvider fancyProvider = 
+                (com.magicbili.islandnpc.npc.FancyNpcProvider) plugin.getNpcProvider();
+            return fancyProvider.getIslandUUIDByNpcId(npcId);
         }
+        
         return null;
     }
 }

@@ -24,10 +24,18 @@ public class NpcInteractionHandler {
     
     /**
      * 处理 NPC 交互
+     * @param player 玩家
+     * @param islandUUID 岛屿 UUID（如果是岛屿 NPC）
      * @return true 如果应该取消事件，false 如果应该让其他插件处理
      */
     public boolean handleInteraction(Player player, UUID islandUUID) {
-        debug("玩家 " + player.getName() + " 与岛屿 NPC 交互");
+        // 如果 islandUUID 为 null，说明这不是岛屿 NPC，直接返回
+        if (islandUUID == null) {
+            debug("非岛屿 NPC，跳过处理");
+            return false;
+        }
+        
+        debug("玩家 " + player.getName() + " 与岛屿 NPC 交互 (岛屿: " + islandUUID + ")");
         
         // 检查是否有 TypeWriter 任务
         boolean hasQuest = checkTypeWriterQuest(player, islandUUID);
@@ -48,16 +56,21 @@ public class NpcInteractionHandler {
      */
     private boolean checkTypeWriterQuest(Player player, UUID islandUUID) {
         try {
+            debug("检查 TypeWriter 任务 - 玩家: " + player.getName() + ", 岛屿: " + islandUUID);
+            
             // 方法 1: 使用已注册的 TypeWriter 桥接服务（推荐）
             com.magicbili.islandnpc.api.TypeWriterBridge bridge = 
                 com.magicbili.islandnpc.api.TypeWriterServiceRegistry.getBridge();
             
             if (bridge != null) {
+                debug("TypeWriter 桥接服务已注册，检查活跃事件...");
                 if (bridge.hasActiveEvent(player, islandUUID)) {
                     debug("检测到活跃的 TypeWriter 岛屿 NPC 事件");
                     bridge.triggerEvents(player, islandUUID);
                     debug("已触发 TypeWriter 事件");
                     return true;
+                } else {
+                    debug("没有找到匹配的 TypeWriter 事件");
                 }
             } else {
                 debug("TypeWriter Extension 服务未注册");
